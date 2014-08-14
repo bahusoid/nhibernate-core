@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Text.RegularExpressions;
 using NHibernate.Criterion;
 using NHibernate.Dialect;
+using NHibernate.SqlCommand;
 using NHibernate.SqlTypes;
 using NHibernate.Type;
 using NUnit.Framework;
@@ -409,27 +410,86 @@ namespace NHibernate.Test.Criteria
 		}
 
 		[Test]
-		public void UseSumWithNullResultWithProjection()
+		public void UseRootProjection()
 		{
+			//NH-3435
 			using (ISession session = Sfi.OpenSession())
+			using (ITransaction tx = session.BeginTransaction())
 			{
-				long sum = session.CreateCriteria(typeof(Reptile))
-					.SetProjection(Projections.Sum(Projections.Id()))
-					.UniqueResult<long>();
-				Assert.AreEqual(0, sum);
+				Course course = new Course();
+				course.CourseCode = "HIB";
+				course.Description = "Hibernate Training";
+				session.Save(course);
+
+				Student gavin = new Student();
+				gavin.Name = "Gavin King";
+				gavin.StudentNumber = 667;
+				session.Save(gavin);
+
+				Enrolment enrolment = new Enrolment();
+				enrolment.Course = course;
+				enrolment.CourseCode = course.CourseCode;
+				enrolment.Semester = 1;
+				enrolment.Year = 1999;
+				enrolment.Student = gavin;
+				enrolment.StudentNumber = gavin.StudentNumber;
+				gavin.Enrolments.Add(enrolment);
+				session.Save(enrolment);
+				session.Flush();
+				
+				//Clear session to make sure entity is eager fetched
+				session.Clear();
+
+				Student g = session.CreateCriteria(typeof(Student))
+					.Add(Expression.IdEq(gavin.StudentNumber))
+					.SetFetchMode("Enrolments", FetchMode.Join)
+					.SetProjection(Projections.RootEntity())
+					.UniqueResult<Student>();
+
+				Assert.That(NHibernateUtil.IsInitialized(g), Is.True, "object must be initialized");
+				Assert.That(g, Is.EqualTo(gavin).Using((Student x, Student y) => x.StudentNumber == y.StudentNumber && x.Name == y.Name ? 0 : 1));
 			}
 		}
 
 		[Test]
-		public void UseSubquerySumWithNullResultWithProjection()
+		public void UseEntityProjection()
 		{
+			//NH-3435
 			using (ISession session = Sfi.OpenSession())
+			using (ITransaction tx = session.BeginTransaction())
 			{
-				int sum = session.CreateCriteria(typeof(Enrolment))
-					.CreateCriteria("Student", "s")
-					.SetProjection(Projections.Sum(Projections.SqlFunction("length", NHibernateUtil.Int32, Projections.Property("s.Name"))))
-					.UniqueResult<int>();
-				Assert.AreEqual(0, sum);
+				Course course = new Course();
+				course.CourseCode = "HIB";
+				course.Description = "Hibernate Training";
+				session.Save(course);
+
+				Student gavin = new Student();
+				gavin.Name = "Gavin King";
+				gavin.StudentNumber = 667;
+				session.Save(gavin);
+
+				Enrolment enrolment = new Enrolment();
+				enrolment.Course = course;
+				enrolment.CourseCode = course.CourseCode;
+				enrolment.Semester = 1;
+				enrolment.Year = 1999;
+				enrolment.Student = gavin;
+				enrolment.StudentNumber = gavin.StudentNumber;
+				gavin.Enrolments.Add(enrolment);
+				session.Save(enrolment);
+				session.Flush();
+
+				//Clear session to make sure entity is eager fetched
+				session.Clear();
+
+				Student g = session.CreateCriteria(typeof(Enrolment))
+					.Add(Expression.And(Expression.Eq("StudentNumber", gavin.StudentNumber), Expression.Eq("CourseCode", course.CourseCode)))
+					.CreateAlias("Student", "s", JoinType.InnerJoin)
+					.SetProjection(Projections.Entity<Student>("s"))
+					.SetFetchMode("s", FetchMode.Eager)
+					.UniqueResult<Student>();
+				Assert.That(NHibernateUtil.IsInitialized(g), Is.True, "object must be initialized");
+				Assert.That(g, Is.EqualTo(gavin).Using((Student x, Student y) => x.StudentNumber == y.StudentNumber && x.Name == y.Name ? 0 : 1));
 			}
 		}
 	}
