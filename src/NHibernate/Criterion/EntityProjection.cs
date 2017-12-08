@@ -1,6 +1,7 @@
 ﻿﻿using System;
 using System.Linq;
 using NHibernate.Engine;
+using NHibernate.Loader;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
 using IQueryable = NHibernate.Persister.Entity.IQueryable;
@@ -17,7 +18,6 @@ namespace NHibernate.Criterion
 		private string _columnAliasSuffix;
 		private string _tableAlias;
 		private IType[] _types;
-		private string[] _columnAliases;
 
 		/// <summary>
 		/// Root entity projection
@@ -53,9 +53,10 @@ namespace NHibernate.Criterion
 		public bool Lazy { get; set; }
 
 		internal string[] IdentifierColumnAliases { get; private set; }
-		internal string[][] PropertyColumnAliases { get; private set; }
+		internal IEntityAliases EntityAliases { get; set; }
 		internal IQueryable Persister { get; private set; }
 		internal System.Type RootEntity { get; private set; }
+		internal string[] ColumnAliases { get; private set; }
 
 		#region Configuration methods
 
@@ -130,14 +131,14 @@ namespace NHibernate.Criterion
 		{
 			SetFields(criteria, criteriaQuery);
 
-			return _columnAliases;
+			return ColumnAliases;
 		}
 
 		string[] IProjection.GetColumnAliases(string alias, int position, ICriteria criteria, ICriteriaQuery criteriaQuery)
 		{
 			SetFields(criteria, criteriaQuery);
 
-			return _columnAliases;
+			return ColumnAliases;
 		}
 
 		SqlString IProjection.ToSqlString(ICriteria criteria, int position, ICriteriaQuery criteriaQuery)
@@ -195,13 +196,17 @@ namespace NHibernate.Criterion
 
 			_columnAliasSuffix = criteriaQuery.GetIndexForAlias().ToString();
 
-			IdentifierColumnAliases = Persister.GetIdentifierAliases(_columnAliasSuffix);
-
-			PropertyColumnAliases = Lazy
-				? new string[][] { }
-				: Enumerable.Range(0, Persister.PropertyNames.Length).Select(i => Persister.GetPropertyAliases(_columnAliasSuffix, i)).ToArray();
-
-			_columnAliases = IdentifierColumnAliases.Concat(PropertyColumnAliases.SelectMany(ca => ca)).ToArray();
+			if (Lazy)
+			{
+				IdentifierColumnAliases = Persister.GetIdentifierAliases(_columnAliasSuffix);
+			}
+			else
+			{
+				EntityAliases = new DefaultEntityAliases(Persister, _columnAliasSuffix);
+				IdentifierColumnAliases = EntityAliases.SuffixedKeyAliases;
+			}
+			
+			ColumnAliases = IdentifierColumnAliases.Concat(EntityAliases?.SuffixedPropertyAliases.SelectMany(ca => ca) ?? Array.Empty<string>()).ToArray();
 
 			_types = new IType[] {new EntityProjectionType(this)};
 		}

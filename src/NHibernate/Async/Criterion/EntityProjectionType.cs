@@ -9,10 +9,9 @@
 
 
 using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using NHibernate.Engine;
-using NHibernate.Event;
-using NHibernate.Persister.Entity;
 using NHibernate.Type;
 
 namespace NHibernate.Criterion
@@ -50,56 +49,24 @@ namespace NHibernate.Criterion
 		private async Task<object> GetInitializedEntityFromProjectionAsync(DbDataReader rs, ISessionImplementor session, object identifier, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			var entity = await (CreateInitializedEntityAsync(
+			var hydratedObjects = new List<object>();
+
+			var entity = await (Loader.Loader.GetOrCreateEntityFromDataReaderAsync(
 				rs,
+				null,
+				null,
+				hydratedObjects,
 				session,
+				session.GenerateEntityKey(identifier, _projection.Persister),
 				_projection.Persister,
-				identifier,
-				_projection.PropertyColumnAliases,
 				LockMode.None,
+				_projection.EntityAliases,
+				false,
 				_projection.FetchLazyProperties,
-				_projection.IsReadOnly, cancellationToken)).ConfigureAwait(false);
+				null, cancellationToken)).ConfigureAwait(false);
 
-			return entity;
-		}
+			await (Loader.Loader.InitializeEntitiesAndCollectionsAsync(hydratedObjects, rs, session, _projection.IsReadOnly, null, cancellationToken)).ConfigureAwait(false);
 
-		private static async Task<object> CreateInitializedEntityAsync(DbDataReader rs, ISessionImplementor session, IQueryable persister, object identifier, string[][] propertyAliases, LockMode lockMode, bool fetchLazyProperties, bool readOnly, CancellationToken cancellationToken)
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			var eventSource = session as IEventSource;
-			PostLoadEvent postLoadEvent = null;
-			PreLoadEvent preLoadEvent = null;
-			object entity;
-			if (eventSource != null)
-			{
-				preLoadEvent = new PreLoadEvent(eventSource);
-				postLoadEvent = new PostLoadEvent(eventSource);
-				entity = eventSource.Instantiate(persister, identifier);
-			}
-			else
-			{
-				entity = session.Instantiate(persister.EntityName, identifier);
-			}
-
-			TwoPhaseLoad.AddUninitializedEntity(
-				session.GenerateEntityKey(identifier, persister),
-				entity,
-				persister,
-				lockMode,
-				!fetchLazyProperties,
-				session);
-
-			var hydrated = await (persister.HydrateAsync(
-				rs,
-				identifier,
-				entity,
-				persister,
-				propertyAliases,
-				fetchLazyProperties,
-				session, cancellationToken)).ConfigureAwait(false);
-
-			TwoPhaseLoad.PostHydrate(persister, identifier, hydrated, null, entity, lockMode, !fetchLazyProperties, session);
-			await (TwoPhaseLoad.InitializeEntityAsync(entity, readOnly, session, preLoadEvent, postLoadEvent, cancellationToken)).ConfigureAwait(false);
 			return entity;
 		}
 	}

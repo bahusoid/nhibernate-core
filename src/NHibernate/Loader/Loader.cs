@@ -575,9 +575,13 @@ namespace NHibernate.Loader
 			}
 		}
 
-		internal void InitializeEntitiesAndCollections(IList hydratedObjects, object resultSetId, ISessionImplementor session, bool readOnly)
+		internal void InitializeEntitiesAndCollections(IList hydratedObjects, DbDataReader resultSetId, ISessionImplementor session, bool readOnly)
 		{
-			ICollectionPersister[] collectionPersisters = CollectionPersisters;
+			InitializeEntitiesAndCollections(hydratedObjects, resultSetId, session, readOnly, CollectionPersisters);
+		}
+
+		internal static void InitializeEntitiesAndCollections(IList hydratedObjects, DbDataReader resultSetId, ISessionImplementor session, bool readOnly, ICollectionPersister[] collectionPersisters)
+		{
 			if (collectionPersisters != null)
 			{
 				for (int i = 0; i < collectionPersisters.Length; i++)
@@ -868,7 +872,7 @@ namespace NHibernate.Loader
 		/// if the version numbers are different.
 		/// </summary>
 		/// <exception cref="StaleObjectStateException"></exception>
-		private void CheckVersion(int i, IEntityPersister persister, object id, object entity, DbDataReader rs, ISessionImplementor session)
+		private static void CheckVersion(IEntityPersister persister, object id, object entity, DbDataReader rs, ISessionImplementor session, IEntityAliases entityAliases)
 		{
 			object version = session.PersistenceContext.GetEntry(entity).Version;
 
@@ -876,7 +880,7 @@ namespace NHibernate.Loader
 			if (version != null)
 			{
 				IVersionType versionType = persister.VersionType;
-				object currentVersion = versionType.NullSafeGet(rs, EntityAliases[i].SuffixedVersionAliases, session, null);
+				object currentVersion = versionType.NullSafeGet(rs, entityAliases.SuffixedVersionAliases, session, null);
 				if (!versionType.IsEqual(version, currentVersion))
 				{
 					if (session.Factory.Statistics.IsStatisticsEnabled)
@@ -900,7 +904,6 @@ namespace NHibernate.Loader
 								ISessionImplementor session)
 		{
 			int cols = persisters.Length;
-			IEntityAliases[] descriptors = EntityAliases;
 
 			if (Log.IsDebugEnabled())
 			{
@@ -909,6 +912,7 @@ namespace NHibernate.Loader
 
 			object[] rowResults = new object[cols];
 
+			var upgradeLocks = UpgradeLocks();
 			for (int i = 0; i < cols; i++)
 			{
 				object obj = null;
@@ -924,19 +928,19 @@ namespace NHibernate.Loader
 				}
 				else
 				{
-					//If the object is already loaded, return the loaded one
-					obj = session.GetEntityUsingInterceptor(key);
-					if (obj != null)
-					{
-						//its already loaded so dont need to hydrate it
-						InstanceAlreadyLoaded(rs, i, persisters[i], key, obj, lockModes[i], session);
-					}
-					else
-					{
-						obj =
-							InstanceNotYetLoaded(rs, i, persisters[i], key, lockModes[i], descriptors[i].RowIdAlias, optionalObjectKey,
-												 optionalObject, hydratedObjects, session);
-					}
+					obj = GetOrCreateEntityFromDataReader(
+						rs,
+						optionalObject,
+						optionalObjectKey,
+						hydratedObjects,
+						session,
+						key,
+						persisters[i],
+						lockModes[i],
+						EntityAliases[i],
+						upgradeLocks,
+						IsEagerPropertyFetchEnabled(i),
+						OwnerAssociationTypes?[i]);
 				}
 
 				rowResults[i] = obj;
@@ -945,10 +949,40 @@ namespace NHibernate.Loader
 		}
 
 		/// <summary>
+		/// Returns either already loaded entity from session or creates new entity from data reader. Returned created entity is not fully initialized - it's added to <paramref name="hydratedObjects"/> collection. To fully initialize entity this collection needs to be supplied to <see cref="InitializeEntitiesAndCollections(System.Collections.IList,System.Data.Common.DbDataReader,NHibernate.Engine.ISessionImplementor,bool)"/>
+		/// </summary>
+		internal static object GetOrCreateEntityFromDataReader(DbDataReader rs, object optionalObject, EntityKey optionalObjectKey, IList hydratedObjects, ISessionImplementor session, EntityKey key, ILoadable persister, LockMode lockMode, IEntityAliases entityAliases, bool upgradeLocks, bool eagerPropertyFetch, EntityType ownerAssociationType)
+		{
+			//If the object is already loaded, return the loaded one
+			object obj = session.GetEntityUsingInterceptor(key);
+			if (obj != null)
+			{
+				//its already loaded so dont need to hydrate it
+				InstanceAlreadyLoaded(rs, persister, key, obj, lockMode, session, entityAliases, upgradeLocks);
+			}
+			else
+			{
+				obj =
+					InstanceNotYetLoaded(
+						rs,
+						persister,
+						key,
+						lockMode,
+						optionalObjectKey,
+						optionalObject,
+						hydratedObjects,
+						session,
+						entityAliases,
+						eagerPropertyFetch,
+						ownerAssociationType);
+			}
+			return obj;
+		}
+
+		/// <summary>
 		/// The entity instance is already in the session cache
 		/// </summary>
-		private void InstanceAlreadyLoaded(DbDataReader rs, int i, IEntityPersister persister, EntityKey key, object obj,
-										   LockMode lockMode, ISessionImplementor session)
+		private static void InstanceAlreadyLoaded(DbDataReader rs, IEntityPersister persister, EntityKey key, object obj, LockMode lockMode, ISessionImplementor session, IEntityAliases entityAliases, bool upgradeLocks)
 		{
 			if (!persister.IsInstance(obj))
 			{
@@ -956,7 +990,7 @@ namespace NHibernate.Loader
 				throw new WrongClassException(errorMsg, key.Identifier, persister.EntityName);
 			}
 
-			if (LockMode.None != lockMode && UpgradeLocks())
+			if (LockMode.None != lockMode && upgradeLocks)
 			{
 				EntityEntry entry = session.PersistenceContext.GetEntry(obj);
 				bool isVersionCheckNeeded = persister.IsVersioned && entry.LockMode.LessThan(lockMode);
@@ -967,7 +1001,7 @@ namespace NHibernate.Loader
 				if (isVersionCheckNeeded)
 				{
 					// we only check the version when _upgrading_ lock modes
-					CheckVersion(i, persister, key.Identifier, obj, rs, session);
+					CheckVersion(persister, key.Identifier, obj, rs, session, entityAliases);
 					// we need to upgrade the lock mode to the mode requested
 					entry.LockMode = lockMode;
 				}
@@ -977,13 +1011,11 @@ namespace NHibernate.Loader
 		/// <summary>
 		/// The entity instance is not in the session cache
 		/// </summary>
-		private object InstanceNotYetLoaded(DbDataReader dr, int i, ILoadable persister, EntityKey key, LockMode lockMode,
-											string rowIdAlias, EntityKey optionalObjectKey, object optionalObject,
-											IList hydratedObjects, ISessionImplementor session)
+		private static object InstanceNotYetLoaded(DbDataReader dr, ILoadable persister, EntityKey key, LockMode lockMode, EntityKey optionalObjectKey, object optionalObject, IList hydratedObjects, ISessionImplementor session, IEntityAliases entityAliases, bool eagerPropertyFetch, EntityType ownerAssociationType)
 		{
 			object obj;
 
-			string instanceClass = GetInstanceClass(dr, i, persister, key.Identifier, session);
+			string instanceClass = GetInstanceClass(dr, persister, key.Identifier, session, entityAliases);
 
 			if (optionalObjectKey != null && key.Equals(optionalObjectKey))
 			{
@@ -1001,7 +1033,7 @@ namespace NHibernate.Loader
 			// (but don't yet initialize the object itself)
 			// note that we acquired LockMode.READ even if it was not requested
 			LockMode acquiredLockMode = lockMode == LockMode.None ? LockMode.Read : lockMode;
-			LoadFromResultSet(dr, i, obj, instanceClass, key, rowIdAlias, acquiredLockMode, persister, session);
+			LoadFromResultSet(dr, obj, instanceClass, key, acquiredLockMode, persister, session, eagerPropertyFetch, entityAliases, ownerAssociationType);
 
 			// materialize associations (and initialize the object) later
 			hydratedObjects.Add(obj);
@@ -1020,21 +1052,20 @@ namespace NHibernate.Loader
 		/// an array of "hydrated" values (do not resolve associations yet),
 		/// and pass the hydrated state to the session.
 		/// </summary>
-		private void LoadFromResultSet(DbDataReader rs, int i, object obj, string instanceClass, EntityKey key,
-									   string rowIdAlias, LockMode lockMode, ILoadable rootPersister,
-									   ISessionImplementor session)
+		private static void LoadFromResultSet(DbDataReader rs, object obj, string instanceClass, EntityKey key, LockMode lockMode, ILoadable rootPersister,
+									   ISessionImplementor session, bool eagerPropertyFetch,IEntityAliases entityAlias, EntityType ownerAssociationType)
 		{
 			object id = key.Identifier;
 
 			// Get the persister for the _subclass_
-			ILoadable persister = (ILoadable)Factory.GetEntityPersister(instanceClass);
+			ILoadable persister = rootPersister.HasSubclasses
+				? (ILoadable) session.Factory.GetEntityPersister(instanceClass)
+				: rootPersister;
 
 			if (Log.IsDebugEnabled())
 			{
 				Log.Debug("Initializing object from DataReader: {0}", MessageHelper.InfoString(persister, id));
 			}
-
-			bool eagerPropertyFetch = IsEagerPropertyFetchEnabled(i);
 
 			// add temp entry so that the next step is circular-reference
 			// safe - only needed because some types don't take proper
@@ -1043,17 +1074,16 @@ namespace NHibernate.Loader
 
 			// This is not very nice (and quite slow):
 			string[][] cols = persister == rootPersister
-								? EntityAliases[i].SuffixedPropertyAliases
-								: EntityAliases[i].GetSuffixedPropertyAliases(persister);
+								? entityAlias.SuffixedPropertyAliases
+								: entityAlias.GetSuffixedPropertyAliases(persister);
 
 			object[] values = persister.Hydrate(rs, id, obj, rootPersister, cols, eagerPropertyFetch, session);
 
-			object rowId = persister.HasRowId ? rs[rowIdAlias] : null;
+			object rowId = persister.HasRowId ? rs[entityAlias.RowIdAlias] : null;
 
-			IAssociationType[] ownerAssociationTypes = OwnerAssociationTypes;
-			if (ownerAssociationTypes != null && ownerAssociationTypes[i] != null)
+			if (ownerAssociationType != null)
 			{
-				string ukName = ownerAssociationTypes[i].RHSUniqueKeyPropertyName;
+				string ukName = ownerAssociationType.RHSUniqueKeyPropertyName;
 				if (ukName != null)
 				{
 					int index = ((IUniqueKeyLoadable)persister).GetPropertyIndex(ukName);
@@ -1076,13 +1106,13 @@ namespace NHibernate.Loader
 		/// <summary>
 		/// Determine the concrete class of an instance for the <c>DbDataReader</c>
 		/// </summary>
-		private string GetInstanceClass(DbDataReader rs, int i, ILoadable persister, object id, ISessionImplementor session)
+		private static string GetInstanceClass(DbDataReader rs, ILoadable persister, object id, ISessionImplementor session, IEntityAliases entityAliases)
 		{
 			if (persister.HasSubclasses)
 			{
 				// code to handle subclasses of topClass
 				object discriminatorValue =
-					persister.DiscriminatorType.NullSafeGet(rs, EntityAliases[i].SuffixedDiscriminatorAlias, session, null);
+					persister.DiscriminatorType.NullSafeGet(rs, entityAliases.SuffixedDiscriminatorAlias, session, null);
 
 				string result = persister.GetSubclassForDiscriminatorValue(discriminatorValue);
 

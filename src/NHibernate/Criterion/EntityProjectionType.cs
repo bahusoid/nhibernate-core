@@ -1,8 +1,7 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Data.Common;
 using NHibernate.Engine;
-using NHibernate.Event;
-using NHibernate.Persister.Entity;
 using NHibernate.Type;
 
 namespace NHibernate.Criterion
@@ -19,6 +18,11 @@ namespace NHibernate.Criterion
 		public EntityProjectionType(EntityProjection projection) : base(projection.RootEntity.FullName, projection.Lazy)
 		{
 			_projection = projection;
+		}
+
+		public override int GetColumnSpan(IMapping mapping)
+		{
+			return _projection.ColumnAliases.Length;
 		}
 
 		object IType.NullSafeGet(DbDataReader rs, string[] names, ISessionImplementor session, object owner)
@@ -43,55 +47,24 @@ namespace NHibernate.Criterion
 
 		private object GetInitializedEntityFromProjection(DbDataReader rs, ISessionImplementor session, object identifier)
 		{
-			var entity = CreateInitializedEntity(
+			var hydratedObjects = new List<object>();
+
+			var entity = Loader.Loader.GetOrCreateEntityFromDataReader(
 				rs,
+				null,
+				null,
+				hydratedObjects,
 				session,
+				session.GenerateEntityKey(identifier, _projection.Persister),
 				_projection.Persister,
-				identifier,
-				_projection.PropertyColumnAliases,
 				LockMode.None,
+				_projection.EntityAliases,
+				false,
 				_projection.FetchLazyProperties,
-				_projection.IsReadOnly);
+				null);
 
-			return entity;
-		}
+			Loader.Loader.InitializeEntitiesAndCollections(hydratedObjects, rs, session, _projection.IsReadOnly, null);
 
-		private static object CreateInitializedEntity(DbDataReader rs, ISessionImplementor session, IQueryable persister, object identifier, string[][] propertyAliases, LockMode lockMode, bool fetchLazyProperties, bool readOnly)
-		{
-			var eventSource = session as IEventSource;
-			PostLoadEvent postLoadEvent = null;
-			PreLoadEvent preLoadEvent = null;
-			object entity;
-			if (eventSource != null)
-			{
-				preLoadEvent = new PreLoadEvent(eventSource);
-				postLoadEvent = new PostLoadEvent(eventSource);
-				entity = eventSource.Instantiate(persister, identifier);
-			}
-			else
-			{
-				entity = session.Instantiate(persister.EntityName, identifier);
-			}
-
-			TwoPhaseLoad.AddUninitializedEntity(
-				session.GenerateEntityKey(identifier, persister),
-				entity,
-				persister,
-				lockMode,
-				!fetchLazyProperties,
-				session);
-
-			var hydrated = persister.Hydrate(
-				rs,
-				identifier,
-				entity,
-				persister,
-				propertyAliases,
-				fetchLazyProperties,
-				session);
-
-			TwoPhaseLoad.PostHydrate(persister, identifier, hydrated, null, entity, lockMode, !fetchLazyProperties, session);
-			TwoPhaseLoad.InitializeEntity(entity, readOnly, session, preLoadEvent, postLoadEvent);
 			return entity;
 		}
 	}
