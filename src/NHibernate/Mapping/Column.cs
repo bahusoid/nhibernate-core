@@ -1,4 +1,5 @@
 using System;
+using System.Text;
 using NHibernate.Dialect.Function;
 using NHibernate.Engine;
 using NHibernate.SqlTypes;
@@ -13,6 +14,8 @@ namespace NHibernate.Mapping
 	[Serializable]
 	public class Column : ISelectable, ICloneable
 	{
+		private const char QuoteChar = '`';
+
 		public const int DefaultLength = 255;
 		public const int DefaultPrecision = 19;
 		public const int DefaultScale = 2;
@@ -28,10 +31,12 @@ namespace NHibernate.Mapping
 		private string _sqlType;
 		private SqlType _sqlTypeCode;
 		private bool _quoted;
-		internal int UniqueInteger;
+		internal int UniqueInteger { get; set; }
 		private string _checkConstraint;
 		private string _comment;
 		private string _defaultValue;
+		private string _canonicalName;
+		private string _aliasBase;
 
 		/// <summary>
 		/// Initializes a new instance of <see cref="Column"/>.
@@ -82,21 +87,42 @@ namespace NHibernate.Mapping
 			get { return _name; }
 			set
 			{
-				if (value[0] == '`')
-				{
-					_quoted = true;
-					_name = value.Substring(1, value.Length - 2);
-				}
-				else
-				{
-					_name = value;
-				}
+				_name = StringHelper.Intern(GetName(value, out _quoted), InternLevel.Default);
+				_canonicalName = _quoted ? _name : StringHelper.Intern(_name.ToLowerInvariant(), InternLevel.Default);
+
+				_aliasBase = GetAliasBase(_canonicalName);
+
 			}
+		}
+
+		private static string GetAliasBase(string name)
+		{
+			int lastLetter = StringHelper.LastIndexOfLetter(name);
+			if (lastLetter == -1)
+			{
+				return "column";
+			}
+			if (lastLetter < name.Length - 1)
+			{
+				return StringHelper.Intern(name.Substring(0, lastLetter + 1), InternLevel.Default);
+			}
+			return name;
+		}
+
+		private string GetName(string value, out bool quoted)
+		{
+			quoted = false;
+			if (value[0] == QuoteChar)
+			{
+				quoted = true;
+				return value.Substring(1, value.Length - 2);
+			}
+			return value;
 		}
 
 		public string CanonicalName
 		{
-			get { return _quoted ? _name : _name.ToLowerInvariant(); }
+			get { return _canonicalName; }
 		}
 
 		/// <summary>
@@ -133,18 +159,8 @@ namespace NHibernate.Mapping
 		{
 			var usableLength = maxAliasLength - _charactersLeftCount;
 			var name = CanonicalName;
-			string alias = name;
+			string alias = _aliasBase;
 			string suffix = UniqueInteger.ToString() + StringHelper.Underscore;
-
-			int lastLetter = StringHelper.LastIndexOfLetter(name);
-			if (lastLetter == -1)
-			{
-				alias = "column";
-			}
-			else if (lastLetter < name.Length - 1)
-			{
-				alias = name.Substring(0, lastLetter + 1);
-			}
 
 			// Updated logic ported from Hibernate's fix for HHH-8073.
 			//  https://github.com/hibernate/hibernate-orm/commit/79073a98f0e4ed225fe4608b67594196f86d48d7
@@ -155,7 +171,7 @@ namespace NHibernate.Mapping
 			//    But I will leave it like this for now to make it look similar. /Oskar 2016-08-20
 			bool useRawName = name.Length + suffix.Length <= usableLength &&
 			                  !_quoted &&
-			                  !StringHelper.EqualsCaseInsensitive(name, "rowid");
+			                  !string.Equals(name, "rowid", StringComparison.OrdinalIgnoreCase);
 			if (!useRawName)
 			{
 				if (suffix.Length >= usableLength)
@@ -436,7 +452,7 @@ namespace NHibernate.Mapping
 		/// <summary>returns quoted name as it would be in the mapping file. </summary>
 		public string GetQuotedName()
 		{
-			return _quoted ? '`' + _name + '`' : _name;
+			return _quoted ? QuoteChar + _name + QuoteChar : _name;
 		}
 
 		public bool IsCaracteristicsDefined()
@@ -463,24 +479,28 @@ namespace NHibernate.Mapping
 		/// <summary> Shallow copy, the value is not copied</summary>
 		public object Clone()
 		{
-			Column copy = new Column();
-			if (_length.HasValue)
-				copy.Length = Length;
-			if (_precision.HasValue)
-				copy.Precision = Precision;
-			if (_scale.HasValue)
-				copy.Scale = Scale;
-			copy.Value = _value;
-			copy.TypeIndex = _typeIndex;
-			copy.Name = GetQuotedName();
-			copy.IsNullable = _nullable;
-			copy.Unique = _unique;
-			copy.SqlType = _sqlType;
-			copy.SqlTypeCode = _sqlTypeCode;
-			copy.UniqueInteger = UniqueInteger; //usually useless
-			copy.CheckConstraint = _checkConstraint;
-			copy.Comment = _comment;
-			copy.DefaultValue = _defaultValue;
+			Column copy = new Column()
+			{
+				_length = _length,
+				_name = _name,
+				_quoted = _quoted,
+				_checkConstraint = _checkConstraint,
+				_comment = _comment,
+				_defaultValue = _defaultValue,
+				_nullable = _nullable,
+				_unique = _unique,
+				_precision = _precision,
+				_scale = _scale,
+				_sqlType = _sqlType,
+				_sqlTypeCode = _sqlTypeCode,
+				_typeIndex = _typeIndex,
+				_value = _value,
+				_canonicalName = _canonicalName,
+				_aliasBase = _aliasBase,
+				
+				//usually useless
+				UniqueInteger = UniqueInteger,
+			};
 			return copy;
 		}
 
