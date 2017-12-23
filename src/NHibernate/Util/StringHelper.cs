@@ -1,6 +1,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Configuration;
 using System.Linq;
 using System.Text;
 
@@ -780,5 +781,69 @@ namespace NHibernate.Util
 			newLineLength = 0;
 			return false;
 		}
+
+		public static string[] Intern(string[] names, InternLevel internLevel, bool checkPoolIfInternIsDisabled = false)
+		{
+			if (names == null)
+				return null;
+
+			for (var i = 0; i < names.Length; i++)
+			{
+				names[i] = Intern(names[i], internLevel, checkPoolIfInternIsDisabled);
+			}
+			return names;
+		}
+
+		public static string Intern(string name, InternLevel internLevel, bool checkPoolIfInternIsDisabled = false)
+		{
+			if (name == null)
+				return null;
+
+			if (name.Length == 0)
+				return string.Empty;
+
+			if (internLevel <= Cfg.Environment.InternLevel)
+			{
+				//Console.WriteLine("Intern: " + name);
+				return string.Intern(name);
+			}
+
+
+			return checkPoolIfInternIsDisabled
+				? StringHelper.InternedIfPossible(name)
+				: name;
+		}
+	}
+
+	public enum InternLevel
+	{
+		/// <summary>
+		/// No interning
+		/// </summary>
+		Disabled,
+			
+		/// <summary>
+		/// Very close to old behavior (prior to NHibernate 5.1)
+		/// Makes sure that metadata with full type name (like EntityName, ReferencedEntityName) are interned.
+		/// </summary>
+		Minimal,
+			
+		/// <summary>
+		/// More aggressive interning (additionally interns column names/ property names and some other strings that expected to be repeated in the single factory)
+		/// </summary>
+		Default,
+
+		/// <summary>
+		/// Additionally interns metadata that's not repeated (or chance to repeat is considered low) inside single factory but can be shared across multiple factories.
+		/// Useful when multiple session factories with the same configuration needs to be created
+		/// </summary>
+		SessionFactories,
+
+		/// <summary>
+		/// Additionally interns static string metadata (like type names for static dynamic proxy and so on...)
+		/// Useful in scenarios when Session Factories are created in multiple app domains
+		/// (for instance multiple web-sites/web-services running on the same App pool)
+		/// </summary>
+		AppDomains,
 	}
 }

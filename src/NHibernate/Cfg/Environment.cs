@@ -270,11 +270,13 @@ namespace NHibernate.Cfg
 		/// </summary>
 		public const string TrackSessionId = "track_session_id";
 
+		public const string StringMetadataInternLevel = "intern_level";
+
 		private static readonly Dictionary<string, string> GlobalProperties;
 
 		private static IBytecodeProvider BytecodeProviderInstance;
 		private static bool EnableReflectionOptimizer;
-
+		
 		private static readonly INHibernateLogger log = NHibernateLogger.For(typeof(Environment));
 
 		/// <summary>
@@ -299,11 +301,30 @@ namespace NHibernate.Cfg
 
 			BytecodeProviderInstance = BuildBytecodeProvider(GlobalProperties);
 			EnableReflectionOptimizer = PropertiesHelper.GetBoolean(PropertyUseReflectionOptimizer, GlobalProperties);
+			
+			//TODO: Proper configuration
+			InternLevel = GetInternLevelFromConfig();
 
 			if (EnableReflectionOptimizer)
 			{
 				log.Info("Using reflection optimizer");
 			}
+		}
+
+		private static InternLevel GetInternLevelFromConfig()
+		{
+			Console.WriteLine();
+			string value = System.Configuration.ConfigurationManager.AppSettings["InternLevel"];
+			Console.WriteLine("Path to config file: " + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).FilePath);
+
+			if (string.IsNullOrEmpty(value) || !Enum.TryParse<InternLevel>(value, true, out var valueParsed))
+			{
+				Console.WriteLine("Intern level setting not found or invalid: " + value);
+				return InternLevel.Default;
+			}
+			Console.WriteLine("Intern level " + value);
+			Console.WriteLine();
+			return valueParsed;
 		}
 
 		private static void LoadGlobalPropertiesFromAppConfig()
@@ -387,6 +408,19 @@ namespace NHibernate.Cfg
 			get { return BytecodeProviderInstance; }
 			set { BytecodeProviderInstance = value; }
 		}
+
+		/// <summary>
+		/// The bytecode provider to use.
+		/// </summary>
+		/// <remarks>
+		/// This property is read from the <c>&lt;nhibernate&gt;</c> section
+		/// of the application configuration file by default. Since it is not
+		/// always convenient to configure NHibernate through the application
+		/// configuration file, it is also possible to set the property value
+		/// manually. This should only be done before a configuration object
+		/// is created, otherwise the change may not take effect.
+		/// </remarks>
+		public static InternLevel InternLevel { get; set; }
 
 		/// <summary>
 		/// Whether to enable the use of reflection optimizer
