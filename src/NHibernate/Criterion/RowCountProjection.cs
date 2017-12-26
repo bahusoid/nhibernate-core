@@ -1,4 +1,5 @@
 using System;
+using NHibernate.Loader;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
 
@@ -23,7 +24,7 @@ namespace NHibernate.Criterion
 
 		public override SqlString ToSqlString(ICriteria criteria, int position, ICriteriaQuery criteriaQuery)
 		{
-			return new SqlString("count(*) as y", position.ToString(), "_");
+			return new SqlString("count(*) as y", BasicLoader.GenerateSuffix(position));
 		}
 
 		public override string ToString()

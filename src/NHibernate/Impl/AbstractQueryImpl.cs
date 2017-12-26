@@ -9,6 +9,7 @@ using NHibernate.Transform;
 using NHibernate.Type;
 using NHibernate.Util;
 using System.Linq;
+using NHibernate.Loader;
 
 namespace NHibernate.Impl
 {
@@ -255,7 +256,7 @@ namespace NHibernate.Impl
 			for (var index = 0; index < typedValues.Count; index++)
 			{
 				var value = typedValues[index];
-				var alias =  (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + index + StringHelper.Underscore;
+				var alias =  (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + BasicLoader.GenerateSuffix(index);
 				namedParamsCopy[alias] = value;
 				aliases[index] = ParserHelper.HqlVariablePrefix + alias;
 			}

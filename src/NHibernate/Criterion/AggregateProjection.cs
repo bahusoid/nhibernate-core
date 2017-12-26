@@ -1,6 +1,7 @@
 using System;
 using NHibernate.SqlCommand;
 using NHibernate.Engine;
+using NHibernate.Loader;
 using NHibernate.Type;
 using NHibernate.Util;
 
@@ -51,7 +52,7 @@ namespace NHibernate.Criterion
 		{
 			if (projection == null)
 			{
-				return new SqlString(aggregate, "(", criteriaQuery.GetColumn(criteria, propertyName), ") as y", loc.ToString(), "_");
+				return new SqlString(aggregate, "(", criteriaQuery.GetColumn(criteria, propertyName), ") as y", BasicLoader.GenerateSuffix(loc));
 			}
 
 			return new SqlString(
@@ -63,8 +64,7 @@ namespace NHibernate.Criterion
 						loc,
 						criteriaQuery)),
 				") as y",
-				loc.ToString(),
-				"_");
+				BasicLoader.GenerateSuffix(loc));
 		}
 
 		public override bool IsGrouped

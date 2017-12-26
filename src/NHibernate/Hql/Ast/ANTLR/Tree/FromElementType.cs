@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Text;
 
 using NHibernate.Engine;
+using NHibernate.Loader;
 using NHibernate.Param;
 using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
@@ -440,7 +441,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 		private static string GenerateSuffix(int size, int k)
 		{
-			String suffix = size == 1 ? "" : k.ToString() + '_';
+			String suffix = size == 1 ? "" : BasicLoader.GenerateSuffix(k);
 			return suffix;
 		}
 

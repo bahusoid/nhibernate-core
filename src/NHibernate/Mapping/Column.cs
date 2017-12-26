@@ -2,6 +2,7 @@ using System;
 using System.Text;
 using NHibernate.Dialect.Function;
 using NHibernate.Engine;
+using NHibernate.Loader;
 using NHibernate.SqlTypes;
 using NHibernate.Type;
 using NHibernate.Util;
@@ -160,7 +161,7 @@ namespace NHibernate.Mapping
 			var usableLength = maxAliasLength - _charactersLeftCount;
 			var name = CanonicalName;
 			string alias = _aliasBase;
-			string suffix = UniqueInteger.ToString() + StringHelper.Underscore;
+			string suffix = BasicLoader.GenerateSuffix(UniqueInteger);
 
 			// Updated logic ported from Hibernate's fix for HHH-8073.
 			//  https://github.com/hibernate/hibernate-orm/commit/79073a98f0e4ed225fe4608b67594196f86d48d7
@@ -192,7 +193,7 @@ namespace NHibernate.Mapping
 		/// </summary>
 		public string GetAlias(Dialect.Dialect dialect, Table table)
 		{
-			string suffix = table.UniqueInteger.ToString() + StringHelper.Underscore;
+			string suffix = BasicLoader.GenerateSuffix(table.UniqueInteger);
 			int maxAliasLength = dialect.MaxAliasLength - suffix.Length;
 			return GetAlias(maxAliasLength) + suffix;
 		}

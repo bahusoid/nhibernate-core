@@ -1,6 +1,7 @@
 using System;
 using System.Text;
 using NHibernate.Engine;
+using NHibernate.Loader;
 using NHibernate.Type;
 using NHibernate.Util;
 
@@ -31,10 +32,8 @@ namespace NHibernate.Hql
 		{
 			return new StringBuilder(16)
 				.Append("col_")
-				.Append(x)
-				.Append(StringHelper.Underscore)
-				.Append(y)
-				.Append(StringHelper.Underscore)
+				.Append(BasicLoader.GenerateSuffix(x))
+				.Append(BasicLoader.GenerateSuffix(y))
 				.ToString();
 		}
 	}

@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Configuration;
 using System.Linq;
 using System.Text;
+using NHibernate.Loader;
 
 
 namespace NHibernate.Util
@@ -580,8 +581,7 @@ namespace NHibernate.Util
 		public static string GenerateAlias(string description, int unique)
 		{
 			return GenerateAliasRoot(description) +
-				   unique +
-				   Underscore;
+				   BasicLoader.GenerateSuffix(unique);
 		}
 
 		private static string GenerateAliasRoot(string description)

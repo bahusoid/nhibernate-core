@@ -8,6 +8,7 @@ using NHibernate.Engine.Query;
 using NHibernate.Hql.Ast.ANTLR;
 using NHibernate.Hql.Ast.ANTLR.Tree;
 using NHibernate.Hql.Ast.ANTLR.Util;
+using NHibernate.Loader;
 using NHibernate.Type;
 using NHibernate.Util;
 
@@ -58,7 +59,7 @@ namespace NHibernate.Impl
 				for (var index = 0; index < typedValues.Count; index++)
 				{
 					var value = typedValues[index];
-					var alias = (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + index + StringHelper.Underscore;
+					var alias = (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + BasicLoader.GenerateSuffix(index);
 					namedParamsCopy[alias] = value;
 					aliases[index] = alias;
 				}

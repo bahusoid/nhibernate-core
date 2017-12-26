@@ -1,4 +1,5 @@
 using System;
+using NHibernate.Loader;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
 using NHibernate.Util;
@@ -42,8 +43,7 @@ namespace NHibernate.Criterion
 
 				buf.Add(cols[i])
 					.Add(" as y")
-					.Add((position + i).ToString())
-					.Add("_");
+					.Add(BasicLoader.GenerateSuffix(position + i));
 			}
 			return buf.ToSqlString();
 		}

@@ -1,6 +1,7 @@
 using System;
 using NHibernate.Engine;
 using NHibernate.Impl;
+using NHibernate.Loader;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
 
@@ -42,7 +43,7 @@ namespace NHibernate.Criterion
 		public override SqlString ToSqlString(ICriteria criteria, int loc, ICriteriaQuery criteriaQuery)
 		{
 			return _subQuery.ToSqlString(criteria, criteriaQuery)
-				.Append(new SqlString(" as y", loc.ToString(), "_"));
+				.Append(new SqlString(" as y", BasicLoader.GenerateSuffix(loc)));
 		}
 
 		public override SqlString ToGroupSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery)

@@ -1,3 +1,4 @@
+using System.Globalization;
 using NHibernate.Engine;
 using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
@@ -8,6 +9,17 @@ namespace NHibernate.Loader
 {
 	public abstract class BasicLoader : Loader
 	{
+		private const int CountPrecalculated = 1000;
+		private static readonly string[] PrecalculatedSuffixes = new string[CountPrecalculated];
+
+		static BasicLoader()
+		{
+			for (var i = 0; i < PrecalculatedSuffixes.Length; i++)
+			{
+				PrecalculatedSuffixes[i] = StringHelper.Intern(GenerateSuffixInternal(i), InternLevel.AppDomains);
+			}
+		}
+
 		protected static readonly string[] NoSuffix = {string.Empty};
 
 		private IEntityAliases[] descriptors;
@@ -101,7 +113,17 @@ namespace NHibernate.Loader
 
 		public static string GenerateSuffix(int index)
 		{
-			return index.ToString() + StringHelper.Underscore;
+			if (index < PrecalculatedSuffixes.Length)
+			{
+				return PrecalculatedSuffixes[index];
+			}
+			return GenerateSuffixInternal(index);
+		}
+
+		private static string GenerateSuffixInternal(int index)
+		{
+			return index.ToString();
+			//return index.ToString(CultureInfo.InvariantCulture) + StringHelper.Underscore;
 		}
 	}
 }
