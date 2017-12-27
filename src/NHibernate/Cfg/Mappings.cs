@@ -264,13 +264,14 @@ namespace NHibernate.Cfg
 			Table table;
 			if (!tables.TryGetValue(key, out table))
 			{
-				table = new Table();
+				table = new Table(tables.Count);
 				table.IsAbstract = isAbstract;
 				table.Name = name;
 				table.Schema = schema;
 				table.Catalog = catalog;
 				table.Subselect = subselect;
 				table.SchemaActions = GetSchemaActions(schemaAction);
+				
 				tables[key] = table;
 			}
 			else
@@ -347,6 +348,7 @@ namespace NHibernate.Cfg
 			}
 
 			tables[key] = table;
+			
 			return table;
 		}
 

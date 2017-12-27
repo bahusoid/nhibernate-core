@@ -76,9 +76,9 @@ namespace NHibernate.Proxy.DynamicProxy
 		private TypeInfo CreateUncachedProxyType(System.Type baseType, IReadOnlyCollection<System.Type> baseInterfaces)
 		{
 			AppDomain currentDomain = AppDomain.CurrentDomain;
-			string typeName = string.Format("{0}Proxy", baseType.Name);
-			string assemblyName = string.Format("{0}Assembly", typeName);
-			string moduleName = string.Format("{0}Module", typeName);
+			string typeName = StringHelper.Intern($"{baseType.Name}Proxy", InternLevel.AppDomains);
+			string assemblyName = StringHelper.Intern($"{typeName}Assembly", InternLevel.AppDomains);
+			string moduleName = StringHelper.Intern($"{typeName}Module", InternLevel.AppDomains);
 
 			var name = new AssemblyName(assemblyName);
 			AssemblyBuilder assemblyBuilder = ProxyAssemblyBuilder.DefineDynamicAssembly(currentDomain, name);

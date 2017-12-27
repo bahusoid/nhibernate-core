@@ -48,7 +48,7 @@ namespace NHibernate.Mapping
 		public string ReferencedEntityName
 		{
 			get { return referencedEntityName; }
-			set { referencedEntityName = StringHelper.Intern(value, InternLevel.Minimal); }
+			set { referencedEntityName = StringHelper.Intern(value, InternLevel.ReferencedEntityName); }
 		}
 
 		public Table ReferencingTable

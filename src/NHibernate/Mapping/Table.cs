@@ -55,6 +55,11 @@ namespace NHibernate.Mapping
 			uniqueInteger = tableCounter++;
 		}
 
+		public Table(int uniqueInteger)
+		{
+			this.uniqueInteger = uniqueInteger;
+		}
+
 		public Table(string name) : this()
 		{
 			Name = name;

@@ -38,12 +38,12 @@ namespace NHibernate.Loader
 		/// <summary>
 		/// Calculate and cache select-clause aliases.
 		/// </summary>
-		public DefaultEntityAliases(ILoadable persister, string suffix, bool internAliases):this(persister, suffix)
+		public DefaultEntityAliases(ILoadable persister, string suffix, bool internAliases) : this(persister, suffix)
 		{
 			if (internAliases == false)
 				return;
 
-			const InternLevel internLevel = InternLevel.SessionFactories;
+			const InternLevel internLevel = InternLevel.EntityAlias;
 
 			SuffixedKeyAliases = StringHelper.Intern(SuffixedKeyAliases, internLevel);
 			SuffixedPropertyAliases = InternPropertiesAliases(SuffixedPropertyAliases, internLevel);
@@ -133,7 +133,7 @@ namespace NHibernate.Loader
 			if (_userProvidedAliases != null)
 			{
 				var result = SafeGetUserProvidedAliases(persister.IdentifierPropertyName) ??
-				             GetUserProvidedAliases(EntityPersister.EntityID);
+							 GetUserProvidedAliases(EntityPersister.EntityID);
 
 				if (result != null)
 					return result;
@@ -141,24 +141,24 @@ namespace NHibernate.Loader
 
 			return GetIdentifierAliases(persister, _suffix);
 		}
-		
+
 		private string[][] DeterminePropertyAliases(ILoadable persister)
 		{
 			return GetSuffixedPropertyAliases(persister);
 		}
-		
+
 		private string DetermineDiscriminatorAlias(ILoadable persister)
 		{
 			if (_userProvidedAliases != null)
 			{
 				var columns = GetUserProvidedAliases(AbstractEntityPersister.EntityClass);
-				if (columns != null) 
+				if (columns != null)
 					return columns[0];
 			}
 
 			return GetDiscriminatorAlias(persister, _suffix);
 		}
-		
+
 		private string[] SafeGetUserProvidedAliases(string propertyPath)
 		{
 			if (propertyPath == null)

@@ -801,10 +801,12 @@ namespace NHibernate.Util
 
 			if (name.Length == 0)
 				return string.Empty;
-
-			if (internLevel <= Cfg.Environment.InternLevel)
+			
+			if ((internLevel & Cfg.Environment.InternLevel) == internLevel)
 			{
-				//Console.WriteLine("Intern: " + name);
+				var isInterned = !string.IsNullOrEmpty(string.IsInterned(name));
+				Console.WriteLine($"Intern: {internLevel} {name} ({isInterned})");
+
 				return string.Intern(name);
 			}
 
@@ -815,29 +817,41 @@ namespace NHibernate.Util
 		}
 	}
 
+	[Flags]
 	public enum InternLevel
 	{
 		/// <summary>
 		/// No interning
 		/// </summary>
 		Disabled,
+
+		EntityName = 1<<0,
+		ClassName = 1<<2,
+		ReferencedEntityName = 1<<3,
 			
 		/// <summary>
 		/// Very close to old behavior (prior to NHibernate 5.1)
 		/// Makes sure that metadata with full type name (like EntityName, ReferencedEntityName) are interned.
 		/// </summary>
-		Minimal,
+		Minimal = EntityName|ClassName|ReferencedEntityName,
+
+		ColumnName = 1<<4,
+		PropertyName = 1<<5,
 			
 		/// <summary>
 		/// More aggressive interning (additionally interns column names/ property names and some other strings that expected to be repeated in the single factory)
 		/// </summary>
-		Default,
+		Default = Minimal | ColumnName | PropertyName,
+
+		EntityAlias = 1<<6,
+		CollectionRole = 1<<7,
+		LoaderName = 1<<8,
 
 		/// <summary>
 		/// Additionally interns metadata that's not repeated (or chance to repeat is considered low) inside single factory but can be shared across multiple factories.
 		/// Useful when multiple session factories with the same configuration needs to be created
 		/// </summary>
-		SessionFactories,
+		SessionFactories = Default | EntityAlias | CollectionRole | LoaderName,
 
 		/// <summary>
 		/// Additionally interns static string metadata (like type names for static dynamic proxy and so on...)

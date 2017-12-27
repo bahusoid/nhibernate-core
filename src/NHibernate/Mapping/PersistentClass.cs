@@ -70,7 +70,7 @@ namespace NHibernate.Mapping
 			get { return className; }
 			set
 			{
-				className = StringHelper.Intern(value, InternLevel.Minimal);
+				className = StringHelper.Intern(value, InternLevel.ClassName);
 				mappedClass = null;
 			}
 		}
@@ -259,7 +259,7 @@ namespace NHibernate.Mapping
 		public virtual string EntityName
 		{
 			get { return entityName; }
-			set { entityName = StringHelper.Intern(value, InternLevel.Minimal, checkPoolIfInternIsDisabled: true); }
+			set { entityName = StringHelper.Intern(value, InternLevel.EntityName, checkPoolIfInternIsDisabled: true); }
 		}
 
 		/// <summary>
@@ -519,7 +519,7 @@ namespace NHibernate.Mapping
 		public string LoaderName
 		{
 			get { return loaderName; }
-			set { loaderName = value == null ? null : StringHelper.Intern(value, InternLevel.SessionFactories); }
+			set { loaderName = value == null ? null : StringHelper.Intern(value, InternLevel.LoaderName); }
 		}
 
 		public virtual ISet<string> SynchronizedTables

@@ -31,12 +31,10 @@ namespace NHibernate.Mapping
 		private string _sqlType;
 		private SqlType _sqlTypeCode;
 		private bool _quoted;
-		internal int UniqueInteger { get; set; }
+		internal int UniqueInteger;
 		private string _checkConstraint;
 		private string _comment;
 		private string _defaultValue;
-		private string _canonicalName;
-		private string _aliasBase;
 
 		/// <summary>
 		/// Initializes a new instance of <see cref="Column"/>.
@@ -87,26 +85,8 @@ namespace NHibernate.Mapping
 			get { return _name; }
 			set
 			{
-				_name = StringHelper.Intern(GetName(value, out _quoted), InternLevel.Default);
-				_canonicalName = _quoted ? _name : StringHelper.Intern(_name.ToLowerInvariant(), InternLevel.Default);
-
-				_aliasBase = GetAliasBase(_canonicalName);
-
+				_name = StringHelper.Intern(GetName(value, out _quoted), InternLevel.ColumnName);
 			}
-		}
-
-		private static string GetAliasBase(string name)
-		{
-			int lastLetter = StringHelper.LastIndexOfLetter(name);
-			if (lastLetter == -1)
-			{
-				return "column";
-			}
-			if (lastLetter < name.Length - 1)
-			{
-				return StringHelper.Intern(name.Substring(0, lastLetter + 1), InternLevel.Default);
-			}
-			return name;
 		}
 
 		private string GetName(string value, out bool quoted)
@@ -122,7 +102,7 @@ namespace NHibernate.Mapping
 
 		public string CanonicalName
 		{
-			get { return _canonicalName; }
+			get { return _quoted ? _name : _name.ToLowerInvariant(); }
 		}
 
 		/// <summary>
@@ -159,8 +139,18 @@ namespace NHibernate.Mapping
 		{
 			var usableLength = maxAliasLength - _charactersLeftCount;
 			var name = CanonicalName;
-			string alias = _aliasBase;
-			string suffix = UniqueInteger.ToString() + StringHelper.Underscore;
+			string alias = name;
+			string suffix = BasicLoader.GenerateSuffix(UniqueInteger);
+
+			int lastLetter = StringHelper.LastIndexOfLetter(name);
+			if (lastLetter == -1)
+			{
+				alias = "column";
+			}
+			else if (lastLetter < name.Length - 1)
+			{
+				alias = name.Substring(0, lastLetter + 1);
+			}
 
 			// Updated logic ported from Hibernate's fix for HHH-8073.
 			//  https://github.com/hibernate/hibernate-orm/commit/79073a98f0e4ed225fe4608b67594196f86d48d7
@@ -170,8 +160,9 @@ namespace NHibernate.Mapping
 			// those checks, then the double checks for total length can be reduced to one.
 			//    But I will leave it like this for now to make it look similar. /Oskar 2016-08-20
 			bool useRawName = name.Length + suffix.Length <= usableLength &&
-			                  !_quoted &&
-			                  !string.Equals(name, "rowid", StringComparison.OrdinalIgnoreCase);
+							  !_quoted &&
+							  !string.Equals(name, "rowid", StringComparison.OrdinalIgnoreCase);
+			
 			if (!useRawName)
 			{
 				if (suffix.Length >= usableLength)
@@ -444,7 +435,7 @@ namespace NHibernate.Mapping
 			}
 			catch (Exception e)
 			{
-				throw new MappingException(string.Format("Could not determine type for column {0} of type {1}: {2}", 
+				throw new MappingException(string.Format("Could not determine type for column {0} of type {1}: {2}",
 					_name, type.GetType().FullName, e.GetType().FullName), e);
 			}
 		}
@@ -495,10 +486,6 @@ namespace NHibernate.Mapping
 				_sqlTypeCode = _sqlTypeCode,
 				_typeIndex = _typeIndex,
 				_value = _value,
-				_canonicalName = _canonicalName,
-				_aliasBase = _aliasBase,
-				
-				//usually useless
 				UniqueInteger = UniqueInteger,
 			};
 			return copy;
