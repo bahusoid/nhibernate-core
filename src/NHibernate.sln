@@ -24,6 +24,10 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "NHibernate.TestDatabaseSetu
 EndProject
 Project("{778DAE3C-4631-46EA-AA77-85C1314464D9}") = "NHibernate.Test.VisualBasic", "NHibernate.Test.VisualBasic\NHibernate.Test.VisualBasic.vbproj", "{7C2EF610-BCA0-4D1F-898A-DE9908E4970C}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NH.Bencher.Model", "RawBencher\Model\NH.Bencher.Model.csproj", "{45DAEB56-B84D-4D7A-BF22-293F1CE07DBB}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "NH.Bencher.Persistence", "RawBencher\Persistence\NH.Bencher.Persistence.csproj", "{3E9CA88C-03EC-445A-960A-242511B6EF55}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -50,6 +54,14 @@ Global
 		{7C2EF610-BCA0-4D1F-898A-DE9908E4970C}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C2EF610-BCA0-4D1F-898A-DE9908E4970C}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C2EF610-BCA0-4D1F-898A-DE9908E4970C}.Release|Any CPU.Build.0 = Release|Any CPU
+		{45DAEB56-B84D-4D7A-BF22-293F1CE07DBB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{45DAEB56-B84D-4D7A-BF22-293F1CE07DBB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{45DAEB56-B84D-4D7A-BF22-293F1CE07DBB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{45DAEB56-B84D-4D7A-BF22-293F1CE07DBB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{3E9CA88C-03EC-445A-960A-242511B6EF55}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{3E9CA88C-03EC-445A-960A-242511B6EF55}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{3E9CA88C-03EC-445A-960A-242511B6EF55}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{3E9CA88C-03EC-445A-960A-242511B6EF55}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
