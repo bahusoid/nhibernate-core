@@ -1,3 +1,4 @@
+using System.Globalization;
 using NHibernate.Engine;
 using NHibernate.Persister.Collection;
 using NHibernate.Persister.Entity;
@@ -6,6 +7,8 @@ using NHibernate.Util;
 
 namespace NHibernate.Loader
 {
+
+
 	public abstract class BasicLoader : Loader
 	{
 		protected static readonly string[] NoSuffix = {string.Empty};

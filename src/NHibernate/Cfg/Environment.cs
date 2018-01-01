@@ -278,6 +278,7 @@ namespace NHibernate.Cfg
 		private static bool EnableReflectionOptimizer;
 		
 		private static readonly INHibernateLogger log = NHibernateLogger.For(typeof(Environment));
+		private static InternLevel _internLevel;
 
 		/// <summary>
 		/// Issue warnings to user when any obsolete property names are used.
@@ -303,7 +304,7 @@ namespace NHibernate.Cfg
 			EnableReflectionOptimizer = PropertiesHelper.GetBoolean(PropertyUseReflectionOptimizer, GlobalProperties);
 			
 			//TODO: Proper configuration
-			InternLevel = GetInternLevelFromConfig();
+			SetInternLevelFromConfig();
 
 			if (EnableReflectionOptimizer)
 			{
@@ -311,18 +312,22 @@ namespace NHibernate.Cfg
 			}
 		}
 
-		private static InternLevel GetInternLevelFromConfig()
+		private static InternLevel SetInternLevelFromConfig()
 		{
 			Console.WriteLine();
 			string value = System.Configuration.ConfigurationManager.AppSettings["InternLevel"];
-			Console.WriteLine("Path to config file: " + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).FilePath);
+			//Console.WriteLine("Path to config file: " + ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None).FilePath);
 
-			if (string.IsNullOrEmpty(value) || !Enum.TryParse<InternLevel>(value, true, out var valueParsed))
+			if (string.IsNullOrEmpty(value))
 			{
-				Console.WriteLine("Intern level setting not found or invalid: " + value);
 				return InternLevel.Default;
 			}
-			Console.WriteLine("Intern level " + value);
+
+			if (!Enum.TryParse<InternLevel>(value, true, out var valueParsed))
+			{
+				Console.WriteLine("Intern level setting is invalid: " + value);
+			}
+			Console.WriteLine("Intern level " + valueParsed);
 			Console.WriteLine();
 			return valueParsed;
 		}
@@ -420,7 +425,20 @@ namespace NHibernate.Cfg
 		/// manually. This should only be done before a configuration object
 		/// is created, otherwise the change may not take effect.
 		/// </remarks>
-		public static InternLevel InternLevel { get; set; }
+		public static InternLevel InternLevel
+		{
+			get { return _internLevel; }
+			set
+			{
+
+				if (value !=  _internLevel)
+				{
+					Console.WriteLine("Intern level  " + value);
+				}
+				_internLevel = value; 
+				
+			}
+		}
 
 		/// <summary>
 		/// Whether to enable the use of reflection optimizer

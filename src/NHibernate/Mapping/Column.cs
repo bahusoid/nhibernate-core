@@ -140,7 +140,7 @@ namespace NHibernate.Mapping
 			var usableLength = maxAliasLength - _charactersLeftCount;
 			var name = CanonicalName;
 			string alias = name;
-			string suffix = BasicLoader.GenerateSuffix(UniqueInteger);
+			string suffix = UniqueInteger.ToString() + StringHelper.Underscore;
 
 			int lastLetter = StringHelper.LastIndexOfLetter(name);
 			if (lastLetter == -1)
