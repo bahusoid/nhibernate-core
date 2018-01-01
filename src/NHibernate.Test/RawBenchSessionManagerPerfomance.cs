@@ -20,12 +20,12 @@ namespace NHibernate.Test
 			RunTest();
 		}
 
-		[Test]
-		public void InternLevel_EntityNameAndReferencedEntityName()
-		{
-			Cfg.Environment.InternLevel = InternLevel.EntityName | InternLevel.ReferencedEntityName;
-			RunTest();
-		}
+		//[Test]
+		//public void InternLevel_EntityNameAndReferencedEntityName()
+		//{
+		//	Cfg.Environment.InternLevel = InternLevel.EntityName | InternLevel.ReferencedEntityName;
+		//	RunTest();
+		//}
 
 
 		[Test]
