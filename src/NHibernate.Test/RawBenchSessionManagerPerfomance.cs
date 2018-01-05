@@ -1,25 +1,30 @@
+#define UPSTREAM
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
 using System.Linq;
-using System.Threading;
-using NHibernate.Loader;
-using NHibernate.Util;
+using NHibernate.Linq;
 using NUnit.Framework;
+
 
 namespace NHibernate.Test
 {
 	[TestFixture]
 	public class RawBenchSessionManagerPerfomance
 	{
+#if UPSTREAM
 		[Test]
-		public void InternLevel_Minimal()
+		public void InternLevel_Upstream()
 		{
-			Cfg.Environment.InternLevel = InternLevel.Minimal;
+			//var n = CfgXmlHelper.SessionFactoryCollectionsCacheExpression;
+			//Just to force initialize static ctor and do not calculated memory conumed by Envirnoment
+			//Cfg.Environment.VerifyProperties(CollectionHelper.EmptyDictionary<string, string>());
+
 			RunTest();
 		}
 
+#else
 		[Test]
 		public void InternLevel_EntityNameAndReferencedEntityName()
 		{
@@ -27,8 +32,7 @@ namespace NHibernate.Test
 			RunTest();
 		}
 
-
-		[Test]
+	[Test]
 		public void InternLevel_Default()
 		{
 			Cfg.Environment.InternLevel = InternLevel.Default;
@@ -49,6 +53,12 @@ namespace NHibernate.Test
 			RunTest();
 		}
 
+
+#endif
+		
+
+
+		
 		int countIterations = 1000000;
 
 		[Test]
@@ -75,7 +85,7 @@ namespace NHibernate.Test
 		//[Test]
 		//public void SuffixGeneration_Pregenerated()
 		//{
-			
+
 		//	List<object> list = new List<object>(countIterations);
 		//	List<int> generatedIndexes = new List<int>(countIterations);
 		//	for (int i = 0; i < countIterations; i++)
@@ -95,6 +105,43 @@ namespace NHibernate.Test
 		//	Console.WriteLine("Time taken: " + Timer.ElapsedMilliseconds);
 		//}
 
+		public IEnumerable<NH.Bencher.EntityClasses.SalesOrderHeader> FetchGraph()
+		{
+			using (var session = NH.Bencher.SessionManager.OpenSession())
+			{
+				return session.Query<NH.Bencher.EntityClasses.SalesOrderHeader>()
+					.Where(soh => soh.SalesOrderId > 50000 && soh.SalesOrderId <= 51000)
+					.Fetch(x => x.Customer)
+					.Fetch(x => x.SalesOrderDetails)
+					.ToList();
+			}
+		}
+
+		[Test]
+		public void TestFetch()
+		{
+			var factory = NH.Bencher.SessionManager.SessionFactory;
+
+
+			using (Timer.Start)
+			{
+				FetchGraph();
+			}
+			Console.WriteLine(Timer.ElapsedMilliseconds);
+
+			using (Timer.Start)
+			{
+				FetchGraph();
+			}
+			Console.WriteLine(Timer.ElapsedMilliseconds);
+
+			using (Timer.Start)
+			{
+				FetchGraph();
+			}
+			Console.WriteLine(Timer.ElapsedMilliseconds);
+		}
+
 		private static void RunTest()
 		{
 			var factory = NH.Bencher.SessionManager.SessionFactory;
@@ -105,7 +152,10 @@ namespace NHibernate.Test
 			setup.ConfigurationFile = si.ConfigurationFile;
 
 			AppDomain newDomain = AppDomain.CreateDomain("New Domain", null, si);
+
+#if !UPSTREAM
 			newDomain.SetData("internLevel", Cfg.Environment.InternLevel);
+#endif
 			try
 			{
 				newDomain.DoCallBack(
@@ -116,8 +166,9 @@ namespace NHibernate.Test
 						Console.WriteLine();
 						Console.WriteLine();
 						Console.WriteLine("From new App Domain...");
-
+#if !UPSTREAM
 						Cfg.Environment.InternLevel = (InternLevel) AppDomain.CurrentDomain.GetData("internLevel");
+#endif
 						try
 						{
 							

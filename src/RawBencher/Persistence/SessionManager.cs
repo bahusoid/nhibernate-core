@@ -3,9 +3,10 @@
 //------------------------------------------------------------------------------
 using System;
 using System.Collections.Generic;
-using System.Configuration;
 using System.Diagnostics;
 using NHibernate;
+using NHibernate.Cfg;
+using NHibernate.Connection;
 using Configuration = NHibernate.Cfg.Configuration;
 
 namespace NH.Bencher
@@ -51,7 +52,7 @@ namespace NH.Bencher
 		/// <summary>Initializes the <see cref="SessionManager"/> class.</summary>
 		static SessionManager()
 		{
-			const int numberOfSessionFactories = 3;
+			const int numberOfSessionFactories = 1;
 			//var conf = System.Configuration.ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
 			//Console.WriteLine("App.config path: " + conf.FilePath);
 
@@ -69,6 +70,8 @@ namespace NH.Bencher
 				{
 					var configuration = new Configuration();
 					configuration.Configure();
+					//configuration.GetProperty(NHibernate.Cfg.Environment.ConnectionString)
+					configuration.SetProperty(NHibernate.Cfg.Environment.ConnectionString, @"Server=(LocalDb)\MSSQLLocalDb;initial catalog=AdventureWorks;Integrated Security=SSPI");
 					configuration.AddAssembly(typeof(SessionManager).Assembly);
 					using (Timer.Start)
 					{
