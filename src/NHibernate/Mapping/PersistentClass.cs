@@ -1123,8 +1123,7 @@ namespace NHibernate.Mapping
 			if (dialect.SupportsTemporaryTables)
 			{
 				temporaryIdTableName = dialect.GenerateTemporaryTableName(Table.Name);
-				Table table = new Table();
-				table.Name = temporaryIdTableName;
+				Table table = new Table(temporaryIdTableName);
 				foreach (Column column in Table.PrimaryKey.ColumnIterator)
 				{
 					table.AddColumn((Column)column.Clone());
