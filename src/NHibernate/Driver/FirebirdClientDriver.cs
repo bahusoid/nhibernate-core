@@ -1,9 +1,7 @@
-using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
-using System.Reflection;
 using System.Text.RegularExpressions;
 using NHibernate.Dialect;
 using NHibernate.SqlCommand;
@@ -128,9 +126,6 @@ namespace NHibernate.Driver
 			return _fbDialect.GetCastTypeName(sqlType);
 		}
 
-		private static volatile MethodInfo _clearPool;
-		private static volatile MethodInfo _clearAllPools;
-
 		/// <summary>
 		/// Clears the connection pool.
 		/// </summary>
@@ -138,29 +133,9 @@ namespace NHibernate.Driver
 		/// <c>null</c> for clearing them all.</param>
 		public void ClearPool(string connectionString)
 		{
-			// In case of concurrent threads, may initialize many times. We do not care.
-			// Members are volatile for avoiding it gets used while its constructor is not yet ended.
-			if (_clearPool == null || _clearAllPools == null)
-			{
-				using (var clearConnection = CreateConnection())
-				{
-					var connectionType = clearConnection.GetType();
-					_clearPool = connectionType.GetMethod("ClearPool") ?? throw new InvalidOperationException("Unable to resolve ClearPool method.");
-					_clearAllPools = connectionType.GetMethod("ClearAllPools") ?? throw new InvalidOperationException("Unable to resolve ClearAllPools method.");
-				}
-			}
-
-			if (connectionString != null)
-			{
-				using (var clearConnection = CreateConnection())
-				{
-					clearConnection.ConnectionString = connectionString;
-					_clearPool.Invoke(null, new object[] {clearConnection});
-				}
-				return;
-			}
-
-			_clearAllPools.Invoke(null, Array.Empty<object>());
+			// Do not move in a base class common to different connection types, or it may not clear
+			// expected pool.
+			PoolHelper<FirebirdClientDriver>.ClearPool(this, connectionString);
 		}
 
 		/// <summary>

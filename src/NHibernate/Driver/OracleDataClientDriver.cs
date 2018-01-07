@@ -15,5 +15,17 @@ namespace NHibernate.Driver
 			: base("Oracle.DataAccess")
 		{
 		}
+
+		/// <summary>
+		/// Clears the connection pool.
+		/// </summary>
+		/// <param name="connectionString">The connection string of connections for which to clear the pool.
+		/// <c>null</c> for clearing them all.</param>
+		public void ClearPool(string connectionString)
+		{
+			// Do not move in a base class common to different connection types, or it may not clear
+			// expected pool.
+			PoolHelper<OracleDataClientDriver>.ClearPool(this, connectionString);
+		}
 	}
 }
