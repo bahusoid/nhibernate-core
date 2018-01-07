@@ -13,7 +13,9 @@ using NHibernate.Type;
 using NUnit.Framework;
 using NUnit.Framework.Interfaces;
 using System.Text;
+using NHibernate.Dialect;
 using NHibernate.Driver;
+using Oracle.ManagedDataAccess.Client;
 
 namespace NHibernate.Test
 {
@@ -313,6 +315,15 @@ namespace NHibernate.Test
 		private void Cleanup()
 		{
 			Sfi?.Close();
+
+			// Clear connection pool for Oracle to avoid problem that was manifested with https://github.com/nhibernate/nhibernate-core/pull/1517:
+			// As it seems Oracle can cache returned types for query for given connection.
+			// So exception can be thrown if two tests execute same query but with different types in result (like for Entity.Id int and Entity.Id Guid)
+			if (Dialect is Oracle8iDialect)
+			{
+				OracleConnection.ClearAllPools();
+			}
+
 			_sessionFactory = null;
 			cfg = null;
 		}
