@@ -1,4 +1,6 @@
+using System;
 using System.Collections.Generic;
+using System.Linq;
 using NHibernate.Persister.Entity;
 
 namespace NHibernate.Loader
@@ -39,19 +41,21 @@ namespace NHibernate.Loader
 		/// </summary>
 		public string[][] GetSuffixedPropertyAliases(ILoadable persister)
 		{
-			if (_userProvidedAliases == null)
-				return GetAllPropertyAliases(persister);
-
-			var propertyNames = persister.PropertyNames;
-			var suffixedPropertyAliases = new string[propertyNames.Length][];
-			for (var i = 0; i < propertyNames.Length; i++)
+			var countInSubclass = persister.PropertyNames.Length;
+			var count = SuffixedPropertyAliases.Length;
+			if (countInSubclass == count)
 			{
-				suffixedPropertyAliases[i] =
-					SafeGetUserProvidedAliases(propertyNames[i]) ??
-					GetPropertyAliases(persister, i);
+				return SuffixedPropertyAliases;
 			}
 
-			return suffixedPropertyAliases;
+			if (countInSubclass < count)
+			{
+				throw new ArgumentException();
+			}
+
+			return SuffixedPropertyAliases
+					.Concat(GetSuffixedPropertyAliases(persister, count)).ToArray();
+
 		}
 
 		public string[] SuffixedVersionAliases { get; }
@@ -68,13 +72,13 @@ namespace NHibernate.Loader
 		/// <summary>
 		/// Returns default aliases for all the properties
 		/// </summary>
-		private string[][] GetAllPropertyAliases(ILoadable persister)
+		private string[][] GetAllPropertyAliases(ILoadable persister, int startIndex)
 		{
-			var propertyNames = persister.PropertyNames;
-			var suffixedPropertyAliases = new string[propertyNames.Length][];
-			for (var i = 0; i < propertyNames.Length; i++)
+			var count = persister.PropertyNames.Length;
+			var suffixedPropertyAliases = new string[count - startIndex][];
+			for (var i = startIndex; i < count; i++)
 			{
-				suffixedPropertyAliases[i] = GetPropertyAliases(persister, i);
+				suffixedPropertyAliases[i - startIndex] = GetPropertyAliases(persister, i);
 			}
 
 			return suffixedPropertyAliases;
@@ -111,9 +115,27 @@ namespace NHibernate.Loader
 		
 		private string[][] DeterminePropertyAliases(ILoadable persister)
 		{
-			return GetSuffixedPropertyAliases(persister);
+			return GetSuffixedPropertyAliases(persister, 0);
 		}
-		
+
+		private string[][] GetSuffixedPropertyAliases(ILoadable persister, int startIndex)
+		{
+			if (_userProvidedAliases == null)
+				return GetAllPropertyAliases(persister, startIndex);
+
+			var propertyNames = persister.PropertyNames;
+			var count = propertyNames.Length;
+			var suffixedPropertyAliases = new string[count - startIndex][];
+			for (var i = startIndex; i < count; i++)
+			{
+				suffixedPropertyAliases[i - startIndex] =
+					SafeGetUserProvidedAliases(propertyNames[i]) ??
+					GetPropertyAliases(persister, i);
+			}
+
+			return suffixedPropertyAliases;
+		}
+
 		private string DetermineDiscriminatorAlias(ILoadable persister)
 		{
 			if (_userProvidedAliases != null)
