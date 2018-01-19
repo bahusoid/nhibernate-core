@@ -59,7 +59,10 @@ namespace NHibernate.Loader
 		/// stored procedure invocations.
 		/// </summary>
 		private bool? _canUseLimits;
-
+		
+		//caches entity aliases for given result index and subclass entity name
+		private readonly Dictionary<Tuple<int, string>, string[][]> _subclassEntityAliasesMap = new Dictionary<Tuple<int, string>, string[][]>();
+			
 		protected Loader(ISessionFactoryImplementor factory)
 		{
 			_factory = factory;
@@ -1078,16 +1081,28 @@ namespace NHibernate.Loader
 			// advantage of two-phase-load (esp. components)
 			TwoPhaseLoad.AddUninitializedEntity(key, obj, persister, lockMode, !eagerPropertyFetch, session);
 
-			// This is not very nice (and quite slow):
 			string[][] cols = persister == rootPersister
 								? EntityAliases[i].SuffixedPropertyAliases
-								: EntityAliases[i].GetSuffixedPropertyAliases(persister);
+								: GetSubclassEntityAliases(i, persister);
 
 			object[] values = persister.Hydrate(rs, id, obj, rootPersister, cols, eagerPropertyFetch, session);
 
 			object rowId = persister.HasRowId ? rs[rowIdAlias] : null;
 
 			TwoPhaseLoad.PostHydrate(persister, id, values, rowId, obj, lockMode, !eagerPropertyFetch, session);
+		}
+
+		private string[][] GetSubclassEntityAliases(int i, ILoadable persister)
+		{
+			var cacheKey = System.Tuple.Create(i, persister.EntityName);
+			if (_subclassEntityAliasesMap.TryGetValue(cacheKey, out string[][] cols))
+			{
+				return cols;
+			}
+
+			cols = EntityAliases[i].GetSuffixedPropertyAliases(persister);
+			_subclassEntityAliasesMap[cacheKey] = cols;
+			return cols;
 		}
 
 		/// <summary>
