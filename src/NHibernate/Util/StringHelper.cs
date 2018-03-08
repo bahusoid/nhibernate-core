@@ -354,6 +354,19 @@ namespace NHibernate.Util
 			root = qualifiedName.Substring(0, loc);
 			return true;
 		}
+		
+		internal static bool IsNotRoot(string qualifiedName, out string root, out string unrootPath)
+		{
+			unrootPath = string.Empty;
+			root = qualifiedName;
+			int loc = qualifiedName.IndexOf('.');
+			if (loc < 0)
+				return false;
+
+			unrootPath = qualifiedName.Substring(loc + 1);
+			root = qualifiedName.Substring(0, loc);
+			return true;
+		}
 
 		/// <summary>
 		/// Converts a <see cref="String"/> in the format of "true", "t", "false", or "f" to
@@ -657,6 +670,7 @@ namespace NHibernate.Util
 			int loc = qualifiedName.IndexOf('.');
 			return (loc < 0) ? qualifiedName : qualifiedName.Substring(loc + 1);
 		}
+		
 
 		public static bool EqualsCaseInsensitive(string a, string b)
 		{

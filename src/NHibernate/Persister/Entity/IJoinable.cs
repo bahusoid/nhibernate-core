@@ -35,10 +35,11 @@ namespace NHibernate.Persister.Entity
 		/// </summary>
 		string TableName { get; }
 
+		//6.0 TODO: Replace by ISupportSelectModeJoinable.SelectFragment
 		/// <summary>
 		/// All columns to select, when loading.
 		/// </summary>
-		string SelectFragment(IJoinable rhs, string rhsAlias, string lhsAlias, string currentEntitySuffix,
+		string SelectFragment(IJoinable rhs, string rhsAlias, string lhsAlias, string entitySuffix,
 							  string currentCollectionSuffix, bool includeCollectionColumns);
 
 		/// <summary>

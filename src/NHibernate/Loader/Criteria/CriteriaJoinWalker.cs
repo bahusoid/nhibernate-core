@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 
@@ -64,12 +65,28 @@ namespace NHibernate.Loader.Criteria
 			{
 				InitAll(translator.GetWhereCondition(), translator.GetOrderBy(), LockMode.None);
 
-				resultTypes = new IType[] { TypeFactory.ManyToOne(persister.EntityName) };
-
 				// root entity comes last
-				userAliasList.Add(criteria.Alias); //root entity comes *last*
-				resultTypeList.Add(translator.ResultType(criteria));
+				var includeRoot = GetSelectMode(string.Empty) != SelectMode.Skip;
+				if (includeRoot)
+				{
+					userAliasList.Add(criteria.Alias); //root entity comes *last*
+					resultTypeList.Add(translator.ResultType(criteria));
+					
+				}
+				
 				includeInResultRowList.Add(true);
+
+
+				//// just make sure that result row is not empty
+				//if (!includeRoot && includeInResultRowList.All(v => !v))
+				//{
+				//	if (includeInResultRowList.Count == 1)
+				//		throw new HibernateException("Can't skip root entity for query with no fetched associations.");
+
+				//	includeInResultRowList[0] = true;
+				//	//includeInResultRowList.Add(true);
+				//}
+
 				userAliases = userAliasList.ToArray();
 				resultTypes = resultTypeList.ToArray();
 				includeInResultRow = includeInResultRowList.ToArray();
@@ -84,8 +101,8 @@ namespace NHibernate.Loader.Criteria
 				var tableAlias = translator.GetSQLAlias(entityJoinInfo.Criteria);
 				var criteriaPath = entityJoinInfo.Criteria.Alias; //path for entity join is equal to alias
 				var persister = entityJoinInfo.Persister as IOuterJoinLoadable;
-				AddExplicitEntityJoinAssociation(persister, tableAlias, translator.GetJoinType(criteriaPath), GetWithClause(criteriaPath));
-				IncludeInResultIfNeeded(persister, entityJoinInfo.Criteria, tableAlias);
+				AddExplicitEntityJoinAssociation(persister, tableAlias, translator.GetJoinType(criteriaPath), criteriaPath);
+				IncludeInResultIfNeeded(persister, entityJoinInfo.Criteria, tableAlias, criteriaPath);
 				//collect mapped associations for entity join
 				WalkEntityTree(persister, tableAlias, criteriaPath, 1);
 			}
@@ -96,6 +113,25 @@ namespace NHibernate.Loader.Criteria
 			// NH different behavior (NH-1476, NH-1760, NH-1785)
 			base.WalkEntityTree(persister, alias, path, currentDepth);
 			WalkCompositeComponentIdTree(persister, alias, path);
+		}
+
+		protected override OuterJoinableAssociation CreateRootAssociation()
+		{
+			return new OuterJoinableAssociation(
+				Persister.EntityType,
+				null,
+				null,
+				Alias,
+				JoinType.LeftOuterJoin,
+				null,
+				Factory,
+				CollectionHelper.EmptyDictionary<string, IFilter>(),
+				GetSelectMode(string.Empty));
+		}
+
+		protected override SelectMode GetSelectMode(string path)
+		{
+			return translator.RootCriteria.GetSelectMode(path);
 		}
 
 		private void WalkCompositeComponentIdTree(IOuterJoinLoadable persister, string alias, string path)
@@ -213,8 +249,8 @@ namespace NHibernate.Loader.Criteria
 			{
 				ICriteria subcriteria = translator.GetCriteria(path);
 				sqlAlias = subcriteria == null ? null : translator.GetSQLAlias(subcriteria);
-
-				IncludeInResultIfNeeded(joinable, subcriteria, sqlAlias);
+				
+				IncludeInResultIfNeeded(joinable, subcriteria, sqlAlias, path);
 			}
 
 			if (sqlAlias == null)
@@ -223,13 +259,14 @@ namespace NHibernate.Loader.Criteria
 			return sqlAlias;
 		}
 
-		private void IncludeInResultIfNeeded(IJoinable joinable, ICriteria subcriteria, string sqlAlias)
+		private void IncludeInResultIfNeeded(IJoinable joinable, ICriteria subcriteria, string sqlAlias, string path)
 		{
 			if (joinable.ConsumesEntityAlias() && !translator.HasProjection)
 			{
-				includeInResultRowList.Add(subcriteria != null && subcriteria.Alias != null);
+				var selectMode = translator.RootCriteria.GetSelectMode(path);
 
-				if (sqlAlias != null)
+				includeInResultRowList.Add(subcriteria != null && subcriteria.Alias != null && selectMode != SelectMode.Skip);
+				if (sqlAlias != null && selectMode != SelectMode.Skip)
 				{
 					if (subcriteria.Alias != null)
 					{

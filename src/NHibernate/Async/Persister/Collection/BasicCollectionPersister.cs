@@ -31,7 +31,6 @@ namespace NHibernate.Persister.Collection
 	using System.Threading;
 	public partial class BasicCollectionPersister : AbstractCollectionPersister
 	{
-
 		protected override async Task<int> DoUpdateRowsAsync(object id, IPersistentCollection collection, ISessionImplementor session, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();

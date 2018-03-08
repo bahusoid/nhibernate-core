@@ -9,6 +9,32 @@ using NHibernate.Util;
 
 namespace NHibernate.Loader
 {
+	public enum SelectMode
+	{
+		Default,
+
+		/// <summary>
+		/// Equivalent of <see cref="FetchMode.Join"/>
+		/// </summary>
+		Fetch,
+		
+		/// <summary>
+		/// Fetch lazy properties
+		/// </summary>
+		FetchLazyProperties,
+
+		/// <summary>
+		/// Only Identifier columns are added to select statement.
+		/// Note: Objects won't be lazy loaded - they only
+		/// </summary>
+		Id,
+
+		/// <summary>
+		/// Skips object from select statement, but keep join for it
+		/// </summary>
+		Skip,
+	}
+
 	public sealed class OuterJoinableAssociation
 	{
 		private readonly IAssociationType joinableType;
@@ -20,6 +46,21 @@ namespace NHibernate.Loader
 		private readonly JoinType joinType;
 		private readonly SqlString on;
 		private readonly IDictionary<string, IFilter> enabledFilters;
+		private readonly SelectMode _selectMode;
+
+		public OuterJoinableAssociation(
+			IAssociationType joinableType,
+			String lhsAlias,
+			String[] lhsColumns,
+			String rhsAlias,
+			JoinType joinType,
+			SqlString withClause,
+			ISessionFactoryImplementor factory,
+			IDictionary<string, IFilter> enabledFilters,
+			SelectMode selectMode) : this(joinableType, lhsAlias, lhsColumns, rhsAlias, joinType, withClause, factory, enabledFilters)
+		{
+			_selectMode = selectMode;
+		}
 
 		public OuterJoinableAssociation(IAssociationType joinableType, String lhsAlias, String[] lhsColumns, String rhsAlias,
 										JoinType joinType, SqlString withClause, ISessionFactoryImplementor factory,
@@ -89,6 +130,11 @@ namespace NHibernate.Loader
 			get { return joinable; }
 		}
 
+		public SelectMode SelectMode
+		{
+			get { return _selectMode; }
+		}
+
 		public int GetOwner(IList<OuterJoinableAssociation> associations)
 		{
 			if (IsOneToOne || IsCollection)
@@ -154,7 +200,7 @@ namespace NHibernate.Loader
 		public void AddManyToManyJoin(JoinFragment outerjoin, IQueryableCollection collection)
 		{
 			string manyToManyFilter = collection.GetManyToManyFilterFragment(rhsAlias, enabledFilters);
-			SqlString condition = string.Empty.Equals(manyToManyFilter)
+			SqlString condition = String.Empty.Equals(manyToManyFilter)
 								? on
 								: SqlStringHelper.IsEmpty(on) ? new SqlString(manyToManyFilter) : 
 									on.Append(" and ").Append(manyToManyFilter);
@@ -162,6 +208,28 @@ namespace NHibernate.Loader
 			outerjoin.AddJoin(joinable.TableName, rhsAlias, lhsColumns, rhsColumns, joinType, condition);
 			outerjoin.AddJoins(joinable.FromJoinFragment(rhsAlias, false, true),
 							   joinable.WhereJoinFragment(rhsAlias, false, true));
+		}
+
+		internal bool ShouldFetchCollectionPersister()
+		{
+			if (!Joinable.IsCollection)
+				return false;
+
+			switch (SelectMode)
+			{
+				case SelectMode.Default:
+					return JoinType == JoinType.LeftOuterJoin;
+
+				case SelectMode.Fetch:
+				case SelectMode.FetchLazyProperties:
+					return true;
+
+				case SelectMode.Id:
+				case SelectMode.Skip:
+					return false;
+			}
+
+			throw new ArgumentOutOfRangeException(nameof(SelectMode), SelectMode.ToString());
 		}
 	}
 }
