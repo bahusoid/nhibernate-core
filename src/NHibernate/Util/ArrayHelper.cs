@@ -114,6 +114,13 @@ namespace NHibernate.Util
 				to.Add(obj);
 		}
 
+		internal static void AddAll<T>(List<T> to, IList from)
+		{
+			T[] list = new T[from.Count];
+			from.CopyTo(list, 0);
+			to.AddRange(list);
+		}
+
 		public static void AddAll<TKey, TValue>(IDictionary<TKey, TValue> to, IDictionary<TKey, TValue> from)
 		{
 			foreach (KeyValuePair<TKey, TValue> de in from)

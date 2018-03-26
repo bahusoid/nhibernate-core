@@ -19,6 +19,7 @@ using NHibernate.Loader.Custom.Sql;
 using NHibernate.Persister.Entity;
 using NHibernate.Transaction;
 using NHibernate.Type;
+using NHibernate.Util;
 
 namespace NHibernate.Impl
 {
@@ -145,6 +146,7 @@ namespace NHibernate.Impl
 			}
 		}
 
+		//TODO 6.0: Make abstract
 		public virtual IList<T> List<T>(CriteriaImpl criteria)
 		{
 			using (BeginProcess())
@@ -155,16 +157,15 @@ namespace NHibernate.Impl
 			}
 		}
 
+		//TODO 6.0: Make virtual
 		public abstract void List(CriteriaImpl criteria, IList results);
+		//{
+		//	ArrayHelper.AddAll(results, List(criteria));
+		//}
 
 		public virtual IList List(CriteriaImpl criteria)
 		{
-			using (BeginProcess())
-			{
-				var results = new List<object>();
-				List(criteria, results);
-				return results;
-			}
+			return List<object>(criteria).ToIList();
 		}
 
 		public abstract IList ListFilter(object collection, string filter, QueryParameters parameters);
