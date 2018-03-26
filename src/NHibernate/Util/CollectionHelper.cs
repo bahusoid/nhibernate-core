@@ -579,6 +579,77 @@ namespace NHibernate.Util
 		}
 
 		/// <summary>
+		/// A read-only generic wrapper around ICollection interface
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		[Serializable]
+		private class CollectionWrapper<T> : ICollection<T>
+		{
+			private readonly ICollection _col;
+
+			public CollectionWrapper(ICollection col)
+			{
+				_col = col;
+			}
+
+			public int Count => _col.Count;
+
+			public bool IsReadOnly => true;
+
+			public bool Contains(T item)
+			{
+				foreach (var obj in _col)
+				{
+					if (Equals(obj, item))
+						return true;
+				}
+
+				return false;
+			}
+
+			public void CopyTo(T[] array, int arrayIndex)
+			{
+				_col.CopyTo(array, arrayIndex);
+			}
+
+			public IEnumerator GetEnumerator()
+			{
+				return _col.GetEnumerator();
+			}
+
+			IEnumerator<T> IEnumerable<T>.GetEnumerator()
+			{
+				return _col.Cast<T>().GetEnumerator();
+			}
+
+			public void Add(T item)
+			{
+				throw new NotImplementedException();
+			}
+
+			public void Clear()
+			{
+				throw new NotImplementedException();
+			}
+
+			public bool Remove(T item)
+			{
+				throw new NotImplementedException();
+			}
+		}
+
+		/// <summary>
+		/// Wraps non-generic collection in to generic read-only wrapper
+		/// </summary>
+		/// <typeparam name="T"></typeparam>
+		/// <param name="col"></param>
+		/// <returns></returns>
+		internal static ICollection<T> WrapCollection<T>(ICollection col)
+		{
+			return new CollectionWrapper<T>(col);
+		}
+
+		/// <summary>
 		/// Computes a hash code for <paramref name="coll"/>.
 		/// </summary>
 		/// <remarks>The hash code is computed as the sum of hash codes of individual elements

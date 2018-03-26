@@ -120,9 +120,7 @@ namespace NHibernate.Util
 
 		internal static void AddAll<T>(List<T> to, IList from)
 		{
-			T[] list = new T[from.Count];
-			from.CopyTo(list, 0);
-			to.AddRange(list);
+			to.AddRange(CollectionHelper.WrapCollection<T>(from));
 		}
 
 		public static void AddAll<TKey, TValue>(IDictionary<TKey, TValue> to, IDictionary<TKey, TValue> from)
