@@ -1,8 +1,12 @@
 ﻿using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Linq;
 using NHibernate.Cfg.MappingSchema;
 using NHibernate.Criterion;
 using NHibernate.Mapping.ByCode;
 using NHibernate.SqlCommand;
+using NHibernate.Transform;
 using NUnit.Framework;
 
 namespace NHibernate.Test.Criteria
@@ -135,6 +139,48 @@ namespace NHibernate.Test.Criteria
 				Assert.That(NHibernateUtil.IsInitialized(ejComplex.Child1), Is.True);
 				Assert.That(NHibernateUtil.IsInitialized(ejComplex.Child2), Is.False);
 				Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1), "Only one SQL select is expected");
+			}
+		}
+
+		[Test]
+		public void TestFutureQueryOver1()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var results = session.QueryOver<EntityComplex>()
+						.TransformUsing(new MyCustomTransformer())
+						.Cacheable()
+						.List<int>();
+
+				var results2 = session.QueryOver<EntityComplex>()
+									.TransformUsing(new MyCustomTransformer())
+									.Cacheable()
+									.List<int>();
+				
+				var results3 = session.QueryOver<EntitySimpleChild>()
+									.List<int>();
+			}
+		}
+
+		[Test]
+		public void TestFutureQueryOverFuture()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var results = session.QueryOver<EntityComplex>()
+									.TransformUsing(new MyCustomTransformer())
+									.Cacheable()
+									.Future<int>();
+				var r1 = results.GetEnumerable().ToList();
+
+
+				var results2 = session.QueryOver<EntityComplex>()
+									.TransformUsing(new MyCustomTransformer())
+									.Cacheable()
+									.Future<int>();
+				var r2 = results2.GetEnumerable().ToList();
 			}
 		}
 
@@ -549,6 +595,25 @@ namespace NHibernate.Test.Criteria
 		}
 
 		#endregion Test Setup
+	}
+
+	public class MyCustomTransformer : IResultTransformer
+	{
+		public object TransformTuple(object[] tuple, string[] aliases)
+		{
+			return tuple.Length == 1 ? tuple[0] : tuple;
+		}
+
+		public IList TransformList(IList collection)
+		{
+			return new List<int>()
+			{
+				1,
+				2,
+				3,
+				4,
+			};
+		}
 	}
 
 	public class EntityWithNoAssociation

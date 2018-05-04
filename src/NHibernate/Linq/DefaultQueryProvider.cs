@@ -22,6 +22,11 @@ namespace NHibernate.Linq
 		Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken);
 	}
 
+	public interface INhQueryProviderSupportUniBatch
+	{
+		IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression);
+	}
+
 	/// <summary>
 	/// The extended <see cref="T:System.Linq.IQueryProvider" /> that supports setting options for underlying <see cref="T:NHibernate.IQuery" />.
 	/// </summary>
@@ -35,7 +40,7 @@ namespace NHibernate.Linq
 		IQueryProvider WithOptions(Action<NhQueryableOptions> setOptions);
 	}
 
-	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions
+	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions, INhQueryProviderSupportUniBatch
 	{
 		private static readonly MethodInfo CreateQueryMethodDefinition = ReflectHelper.GetMethodDefinition((INhQueryProvider p) => p.CreateQuery<object>(null));
 
@@ -272,6 +277,12 @@ namespace NHibernate.Linq
 			SetParameters(query, nhLinqExpression.ParameterValuesByName);
 			_options?.Apply(query);
 			return query.ExecuteUpdate();
+		}
+
+		public IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression)
+		{
+			expression = PrepareQuery(exrpession, out var query);
+			return query;
 		}
 	}
 }
