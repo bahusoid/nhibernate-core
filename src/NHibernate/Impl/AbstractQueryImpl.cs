@@ -9,6 +9,7 @@ using NHibernate.Transform;
 using NHibernate.Type;
 using NHibernate.Util;
 using System.Linq;
+using System.Text;
 
 namespace NHibernate.Impl
 {
@@ -225,44 +226,66 @@ namespace NHibernate.Impl
 		/// </summary>
 		protected internal virtual string ExpandParameterLists(IDictionary<string, TypedValue> namedParamsCopy)
 		{
-			string query = queryString;
-			foreach (var me in namedParameterLists)
-				query = ExpandParameterList(query, me.Key, me.Value, namedParamsCopy);
 
-			return query;
+			return ExpandParameterList(namedParamsCopy);
 		}
 
 		/// <summary>
 		/// Warning: adds new parameters to the argument by side-effect, as well as mutating the query string!
 		/// </summary>
-		private string ExpandParameterList(string query, string name, TypedValue typedList, IDictionary<string, TypedValue> namedParamsCopy)
+		private string ExpandParameterList(IDictionary<string, TypedValue> namedParamsCopy)
 		{
-			var vals = (IEnumerable) typedList.Value;
-			var type = typedList.Type;
-
-			var typedValues = (from object value in vals
-							   select new TypedValue(type, value))
-				.ToList();
-
-			if (typedValues.Count == 1)
-			{
-				namedParamsCopy[name] = typedValues[0];
-				return query;
-			}
 			
-			var isJpaPositionalParam = parameterMetadata.GetNamedParameterDescriptor(name).JpaStyle;
-			var aliases = new string[typedValues.Count];
-			for (var index = 0; index < typedValues.Count; index++)
+			var namedParams = this.namedParameterLists;
+			
+			if (namedParams.Values.All(tl => ((ICollection) tl.Value).Count == 1))
 			{
-				var value = typedValues[index];
-				var alias =  (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + index + StringHelper.Underscore;
-				namedParamsCopy[alias] = value;
-				aliases[index] = ParserHelper.HqlVariablePrefix + alias;
+				foreach (var kv in namedParams)
+				{
+					var typedValue = kv.Value;
+					var valuesCollection = (ICollection) typedValue.Value;
+					namedParamsCopy[kv.Key] = new TypedValue(
+						typedValue.Type,
+						valuesCollection.Cast<object>().FirstOrDefault());
+				}
+			
+				return this.queryString;
 			}
 
-			var paramPrefix = isJpaPositionalParam ? StringHelper.SqlParameter : ParserHelper.HqlVariablePrefix;
+			var query = new StringBuilder(queryString);
 
-			return StringHelper.Replace(query, paramPrefix + name, string.Join(StringHelper.CommaSpace, aliases), true);
+			foreach (var kv in namedParams)
+			{
+				var vals = (IEnumerable) kv.Value.Value;
+				var type = kv.Value.Type;
+				var name = kv.Key;
+
+				var typedValues = (from object value in vals
+									select new TypedValue(type, value))
+					.ToList();
+
+				if (typedValues.Count == 1)
+				{
+					namedParamsCopy[name] = typedValues[0];
+					continue;
+				}
+
+				var isJpaPositionalParam = parameterMetadata.GetNamedParameterDescriptor(name).JpaStyle;
+				var aliases = new string[typedValues.Count];
+				for (var index = 0; index < typedValues.Count; index++)
+				{
+					var value = typedValues[index];
+					var alias = (isJpaPositionalParam ? 'x' + name : name + StringHelper.Underscore) + index + StringHelper.Underscore;
+					namedParamsCopy[alias] = value;
+					aliases[index] = ParserHelper.HqlVariablePrefix + alias;
+				}
+
+				var paramPrefix = isJpaPositionalParam ? StringHelper.SqlParameter : ParserHelper.HqlVariablePrefix;
+
+				StringHelper.Replace(query, paramPrefix + name, string.Join(StringHelper.CommaSpace, aliases), true);
+			}
+
+			return query.ToString();
 		}
 
 		#region Parameters

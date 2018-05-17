@@ -2,9 +2,11 @@ using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Reflection;
+using System.Text;
 using NHibernate.Cache;
 using NHibernate.Engine;
 using NHibernate.Test.SecondLevelCacheTests;
+using NHibernate.Util;
 using NUnit.Framework;
 
 namespace NHibernate.Test.QueryTest
