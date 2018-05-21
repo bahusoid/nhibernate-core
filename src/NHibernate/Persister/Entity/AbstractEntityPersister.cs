@@ -201,9 +201,9 @@ namespace NHibernate.Persister.Entity
 
 		#endregion
 
-		private readonly Dictionary<string, EntityLoader> uniqueKeyLoaders = new Dictionary<string, EntityLoader>();
+		private readonly Dictionary<string, Lazy<EntityLoader>> uniqueKeyLoaders = new Dictionary<string, Lazy<EntityLoader>>();
 		private readonly Dictionary<LockMode, ILockingStrategy> lockers = new Dictionary<LockMode, ILockingStrategy>();
-		private readonly Dictionary<string, IUniqueEntityLoader> loaders = new Dictionary<string, IUniqueEntityLoader>();
+		private readonly Dictionary<string, Lazy<IUniqueEntityLoader>> loaders = new Dictionary<string, Lazy<IUniqueEntityLoader>>();
 
 		#region SQL strings
 
@@ -2095,7 +2095,7 @@ namespace NHibernate.Persister.Entity
 
 			if (useStaticLoader)
 			{
-				return uniqueKeyLoaders[propertyName];
+				return uniqueKeyLoaders[propertyName].Value;
 			}
 
 			return CreateUniqueKeyLoader(propertyMapping.ToType(propertyName), propertyMapping.ToColumns(propertyName), enabledFilters);
@@ -2116,9 +2116,14 @@ namespace NHibernate.Persister.Entity
 				if (propertyUniqueness[i])
 				{
 					//don't need filters for the static loaders
+					var iCopy = i;
 					uniqueKeyLoaders[propertyNames[i]] =
-						CreateUniqueKeyLoader(propertyTypes[i], GetPropertyColumnNames(i),
-																	CollectionHelper.EmptyDictionary<string, IFilter>());
+						CreateLazyLoader(
+							() =>
+								CreateUniqueKeyLoader(
+									propertyTypes[iCopy],
+									GetPropertyColumnNames(iCopy),
+									CollectionHelper.EmptyDictionary<string, IFilter>()));
 				}
 			}
 		}
@@ -2198,6 +2203,16 @@ namespace NHibernate.Persister.Entity
 		protected IUniqueEntityLoader CreateEntityLoader(LockMode lockMode)
 		{
 			return CreateEntityLoader(lockMode, CollectionHelper.EmptyDictionary<string, IFilter>());
+		}
+
+		private Lazy<IUniqueEntityLoader> CreateLazyLoader(LockMode lockMode)
+		{
+			return CreateLazyLoader(() => CreateEntityLoader(lockMode, CollectionHelper.EmptyDictionary<string, IFilter>()));
+		}
+
+		private static Lazy<TLoader> CreateLazyLoader<TLoader>(Func<TLoader> getLoader)
+		{
+			return new Lazy<TLoader>(() => getLoader());
 		}
 
 		protected bool Check(int rows, object id, int tableNumber, IExpectation expectation, DbCommand statement)
@@ -3554,19 +3569,19 @@ namespace NHibernate.Persister.Entity
 
 		private void CreateLoaders()
 		{
-			loaders[LockMode.None.ToString()] = CreateEntityLoader(LockMode.None);
-			IUniqueEntityLoader readLoader = CreateEntityLoader(LockMode.Read);
-			loaders[LockMode.Read.ToString()] = readLoader;
+			loaders[LockMode.None.ToString()] = CreateLazyLoader(LockMode.None);
+			var lazyReadLoader = CreateLazyLoader(LockMode.Read);
+			loaders[LockMode.Read.ToString()] = lazyReadLoader;
 
 			//TODO: inexact, what we really need to know is: are any outer joins used?
 			bool disableForUpdate = SubclassTableSpan > 1 && HasSubclasses && !Factory.Dialect.SupportsOuterJoinForUpdate;
 
-			loaders[LockMode.Upgrade.ToString()] = disableForUpdate ? readLoader : CreateEntityLoader(LockMode.Upgrade);
-			loaders[LockMode.UpgradeNoWait.ToString()] = disableForUpdate ? readLoader : CreateEntityLoader(LockMode.UpgradeNoWait);
-			loaders[LockMode.Force.ToString()] = disableForUpdate ? readLoader : CreateEntityLoader(LockMode.Force);
+			loaders[LockMode.Upgrade.ToString()] = disableForUpdate ? lazyReadLoader : CreateLazyLoader(LockMode.Upgrade);
+			loaders[LockMode.UpgradeNoWait.ToString()] = disableForUpdate ? lazyReadLoader : CreateLazyLoader(LockMode.UpgradeNoWait);
+			loaders[LockMode.Force.ToString()] = disableForUpdate ? lazyReadLoader : CreateLazyLoader(LockMode.Force);
 
-			loaders["merge"] = new CascadeEntityLoader(this, CascadingAction.Merge, Factory);
-			loaders["refresh"] = new CascadeEntityLoader(this, CascadingAction.Refresh, Factory);
+			loaders["merge"] = new Lazy<IUniqueEntityLoader>(() => new CascadeEntityLoader(this, CascadingAction.Merge, Factory));
+			loaders["refresh"] = new Lazy<IUniqueEntityLoader>(() => new CascadeEntityLoader(this, CascadingAction.Refresh, Factory));
 		}
 
 		protected void CreateQueryLoader()
@@ -3600,17 +3615,22 @@ namespace NHibernate.Persister.Entity
 			{
 				if (!string.IsNullOrEmpty(session.FetchProfile) && LockMode.Upgrade.GreaterThan(lockMode))
 				{
-					return loaders[session.FetchProfile];
+					return GetLoader(session.FetchProfile);
 				}
 				else
 				{
-					return loaders[lockMode.ToString()];
+					return GetLoader(lockMode.ToString());
 				}
 			}
 			else
 			{
 				return CreateEntityLoader(lockMode, enabledFilters);
 			}
+		}
+
+		private IUniqueEntityLoader GetLoader(string mode)
+		{
+			return loaders[mode].Value;
 		}
 
 		private bool IsAllNull(object[] array, int tableNumber)
