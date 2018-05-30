@@ -25,6 +25,14 @@ using NHibernate.Util;
 
 namespace NHibernate.Impl
 {
+	internal static partial class SessionImplExtensions
+	{
+		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
+		{
+			(implementor as SessionImpl)?.AutoFlushIfRequired(querySpaces);
+		}
+	}
+
 	/// <summary>
 	/// Concrete implementation of an <see cref="ISession" />, also the central, organizing component
 	/// of NHibernate's internal implementation.
@@ -45,6 +53,8 @@ namespace NHibernate.Impl
 		private FutureCriteriaBatch futureCriteriaBatch;
 		[NonSerialized]
 		private FutureQueryBatch futureQueryBatch;
+		[NonSerialized]
+		private IMultiAnyQueryBatch _futureMultiBatch;
 
 		[NonSerialized]
 		private readonly EventListeners listeners;
@@ -227,6 +237,11 @@ namespace NHibernate.Impl
 			{
 				futureQueryBatch = value;
 			}
+		}
+
+		public override IMultiAnyQueryBatch FutureMultiBatch
+		{
+			get => _futureMultiBatch ?? (_futureMultiBatch = new MultiAnyQueryBatch(this));
 		}
 
 		public ConnectionReleaseMode ConnectionReleaseMode
@@ -550,6 +565,8 @@ namespace NHibernate.Impl
 			}
 		}
 
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
 		public override IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar)
 		{
 			using (BeginProcess())
@@ -1027,7 +1044,7 @@ namespace NHibernate.Impl
 		/// </summary>
 		/// <param name="querySpaces"></param>
 		/// <returns></returns>
-		private bool AutoFlushIfRequired(ISet<string> querySpaces)
+		internal bool AutoFlushIfRequired(ISet<string> querySpaces)
 		{
 			using (BeginProcess())
 			{

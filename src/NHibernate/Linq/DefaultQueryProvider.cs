@@ -15,11 +15,18 @@ namespace NHibernate.Linq
 {
 	public partial interface INhQueryProvider : IQueryProvider
 	{
+		//TODO: Obsolete? We don't really need ExecuteFuture, ExecuteFutureValue for unified batch
 		IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression);
 		IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression);
 		void SetResultTransformerAndAdditionalCriteria(IQuery query, NhLinqExpression nhExpression, IDictionary<string, Tuple<object, IType>> parameters);
 		int ExecuteDml<T>(QueryMode queryMode, Expression expression);
 		Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken);
+	}
+
+	public interface INhQueryProviderSupportMultiBatch
+	{
+		IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression);
+		IMultiAnyQueryBatch GetFutureMultiBatch();
 	}
 
 	/// <summary>
@@ -35,7 +42,7 @@ namespace NHibernate.Linq
 		IQueryProvider WithOptions(Action<NhQueryableOptions> setOptions);
 	}
 
-	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions
+	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions, INhQueryProviderSupportMultiBatch
 	{
 		private static readonly MethodInfo CreateQueryMethodDefinition = ReflectHelper.GetMethodDefinition((INhQueryProvider p) => p.CreateQuery<object>(null));
 
@@ -115,7 +122,8 @@ namespace NHibernate.Linq
 			var nhExpression = PrepareQuery(expression, out var query);
 
 			var result = query.Future<TResult>();
-			SetupFutureResult(nhExpression, (IDelayedValue)result);
+			if(result is IDelayedValue delayedValue)
+				SetupFutureResult(nhExpression, delayedValue);
 
 			return result;
 		}
@@ -123,9 +131,15 @@ namespace NHibernate.Linq
 		public virtual IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				var linqBatchItem = new MultiAnyLinqQuery<TResult>(query, nhExpression);
+				Session.GetFutureMultiBatch().AddAsValue(linqBatchItem);
+			}
 
 			var result = query.FutureValue<TResult>();
-			SetupFutureResult(nhExpression, (IDelayedValue)result);
+			if (result is IDelayedValue delayedValue)
+				SetupFutureResult(nhExpression, delayedValue);
 
 			return result;
 		}
@@ -272,6 +286,17 @@ namespace NHibernate.Linq
 			SetParameters(query, nhLinqExpression.ParameterValuesByName);
 			_options?.Apply(query);
 			return query.ExecuteUpdate();
+		}
+
+		public IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression)
+		{
+			expression = PrepareQuery(exrpession, out var query);
+			return query;
+		}
+
+		public IMultiAnyQueryBatch GetFutureMultiBatch()
+		{
+			return Session.GetFutureMultiBatch();
 		}
 	}
 }

@@ -28,7 +28,7 @@ namespace NHibernate.Linq
 		Task<int> ExecuteDmlAsync<T>(QueryMode queryMode, Expression expression, CancellationToken cancellationToken);
 	}
 
-	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions
+	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions, INhQueryProviderSupportMultiBatch
 	{
 
 		// Since v5.1

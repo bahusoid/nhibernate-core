@@ -35,6 +35,11 @@ namespace NHibernate.Engine
 				// breaking change in case in custom session implementation is used.
 				new SessionIdLoggingContext(session.SessionId);
 		}
+
+		internal static IMultiAnyQueryBatch GetFutureMultiBatch(this ISessionImplementor session)
+		{
+			return (session as AbstractSessionImpl)?.FutureMultiBatch;
+		}
 	}
 
 	/// <summary>
@@ -246,6 +251,8 @@ namespace NHibernate.Engine
 
 		IQuery GetNamedSQLQuery(string name);
 		
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
 		IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar); // NH specific for MultiQuery
 
 		IInterceptor Interceptor { get; }

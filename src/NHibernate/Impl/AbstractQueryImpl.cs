@@ -903,12 +903,20 @@ namespace NHibernate.Impl
 
 		public IFutureEnumerable<T> Future<T>()
 		{
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				return session.GetFutureMultiBatch().AddAsEnumerable<T>(this);
+			}
 			session.FutureQueryBatch.Add<T>(this);
 			return session.FutureQueryBatch.GetEnumerator<T>();
 		}
 
 		public IFutureValue<T> FutureValue<T>()
 		{
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				return session.GetFutureMultiBatch().AddAsValue<T>(this);
+			}
 			session.FutureQueryBatch.Add<T>(this);
 			return session.FutureQueryBatch.GetFutureValue<T>();
 		}
@@ -1013,7 +1021,7 @@ namespace NHibernate.Impl
 					resultTransformer);
 		}
 
-		protected void Before()
+		protected internal void Before()
 		{
 			if (flushMode != FlushMode.Unspecified)
 			{
@@ -1027,7 +1035,7 @@ namespace NHibernate.Impl
 			}
 		}
 
-		protected void After()
+		protected internal void After()
 		{
 			if (sessionFlushMode != FlushMode.Unspecified)
 			{

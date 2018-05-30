@@ -278,6 +278,8 @@ namespace NHibernate.Impl
 			get { return CollectionHelper.EmptyDictionary<string, IFilter>(); }
 		}
 
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
 		public override IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar)
 		{
 			using (BeginContext())
@@ -746,6 +748,7 @@ namespace NHibernate.Impl
 		#region IDisposable Members
 
 		private bool _isAlreadyDisposed;
+		private IMultiAnyQueryBatch _futureMultiBatch;
 
 		/// <summary>
 		/// Finalizer that ensures the object is correctly disposed of.
@@ -863,6 +866,11 @@ namespace NHibernate.Impl
 		{
 			get { throw new NotSupportedException("future queries are not supported for stateless session"); }
 			protected internal set { throw new NotSupportedException("future queries are not supported for stateless session"); }
+		}
+
+		public override IMultiAnyQueryBatch FutureMultiBatch
+		{
+			get => _futureMultiBatch ?? (_futureMultiBatch = new MultiAnyQueryBatch(this));
 		}
 
 		public override IEntityPersister GetEntityPersister(string entityName, object obj)

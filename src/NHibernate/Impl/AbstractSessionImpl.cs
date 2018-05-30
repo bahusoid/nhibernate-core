@@ -264,6 +264,8 @@ namespace NHibernate.Impl
 		/// <inheritdoc />
 		public virtual DbConnection Connection => ConnectionManager.GetConnection();
 
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
 		public abstract IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar);
 		public abstract EventListeners Listeners { get; }
 		public abstract bool IsEventSource { get; }
@@ -277,6 +279,12 @@ namespace NHibernate.Impl
 		public abstract int ExecuteNativeUpdate(NativeSQLQuerySpecification specification, QueryParameters queryParameters);
 		public abstract FutureCriteriaBatch FutureCriteriaBatch { get; protected internal set; }
 		public abstract FutureQueryBatch FutureQueryBatch { get; protected internal set; }
+	
+		//TODO 6.0: Make abstract
+		public virtual IMultiAnyQueryBatch FutureMultiBatch
+		{
+			get => throw new NotImplementedException();
+		}
 
 		public virtual IInterceptor Interceptor { get; protected set; }
 
