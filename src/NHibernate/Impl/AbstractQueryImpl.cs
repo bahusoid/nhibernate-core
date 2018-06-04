@@ -903,12 +903,20 @@ namespace NHibernate.Impl
 
 		public IFutureEnumerable<T> Future<T>()
 		{
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				return session.GetFutureMultiBatch().AddAsEnumerable<T>(this);
+			}
 			session.FutureQueryBatch.Add<T>(this);
 			return session.FutureQueryBatch.GetEnumerator<T>();
 		}
 
 		public IFutureValue<T> FutureValue<T>()
 		{
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				return session.GetFutureMultiBatch().AddAsValue<T>(this);
+			}
 			session.FutureQueryBatch.Add<T>(this);
 			return session.FutureQueryBatch.GetFutureValue<T>();
 		}

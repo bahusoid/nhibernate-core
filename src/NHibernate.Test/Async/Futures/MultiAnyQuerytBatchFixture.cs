@@ -29,6 +29,33 @@ namespace NHibernate.Test.Futures
 		private Guid _eagerId;
 
 		[Test]
+		public async Task CanCombineCriteriaAndHqlInFutureAsync()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var future1 = session.QueryOver<EntityComplex>()
+						.Where(x => x.Version >= 0)
+						.TransformUsing(new ListTransformerToInt()).Future<int>();
+
+				var future2 = session.Query<EntityComplex>().Where(ec => ec.Version > 2).ToFuture();
+				var future3 = session.Query<EntitySimpleChild>().Select(sc => sc.Name).ToFuture();
+
+				var future4 = session
+						.Query<EntitySimpleChild>()
+						.ToFutureValue(sc => sc.FirstOrDefault());
+
+				Assert.That((await (future1.GetEnumerableAsync())).Count(), Is.GreaterThan(0), "Empty results are not expected");
+				Assert.That((await (future2.GetEnumerableAsync())).Count(), Is.EqualTo(0), "This query should not return results");
+				Assert.That((await (future3.GetEnumerableAsync())).Count(), Is.GreaterThan(1), "Empty results are not expected");
+				Assert.That(await (future4.GetValueAsync()), Is.Not.Null, "Loaded entity should not be null");
+
+				if (SupportsMultipleQueries)
+					Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1));
+			}
+		}
+
+		[Test]
 		public async Task CanCombineCriteriaAndHqlInBatchAsync()
 		{
 			using (var session = OpenSession())

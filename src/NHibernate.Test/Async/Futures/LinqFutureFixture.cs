@@ -412,5 +412,97 @@ namespace NHibernate.Test.Futures
 				await (tx.CommitAsync());
 			}
 		}
+
+		[Test]
+		public async Task FutureCombineCachedAndNonCachedQueriesAsync()
+		{
+			using (var s = OpenSession())
+			using (var tx = s.BeginTransaction())
+			{
+				var p1 = new Person
+				{
+					Name = "Person name",
+					Age = 15
+				};
+				var p2 = new Person
+				{
+					Name = "Person name",
+					Age = 20
+				};
+
+				await (s.SaveAsync(p1));
+				await (s.SaveAsync(p2));
+				await (tx.CommitAsync());
+			}
+
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IFutureEnumerable<Person>>();
+				for (var i = 0; i < 5; i++)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+					list.Add(query.WithOptions(x => x.SetCacheable(true)).ToFuture());
+				}
+
+				foreach (var query in list)
+				{
+					var result = (await (query.GetEnumerableAsync())).ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+			}
+
+			//Check query.List returns data from cache
+			Sfi.Statistics.IsStatisticsEnabled = true;
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IEnumerable<Person>>();
+				for (var i = 0; i < 5; i++)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+
+					list.Add(await (query.WithOptions(x => x.SetCacheable(true)).ToListAsync()));
+				}
+
+				foreach (var query in list)
+				{
+					var result = query.ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+
+				Assert.That(Sfi.Statistics.PrepareStatementCount, Is.EqualTo(0), "Queries must be retrieved from cache");
+			}
+
+			//Check another Future returns data from cache
+			Sfi.Statistics.Clear();
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IFutureEnumerable<Person>>();
+				//Reverse order of queries added to cache
+				for (var i = 5 - 1; i >= 0; i--)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+
+					list.Add(query.WithOptions(x => x.SetCacheable(true)).ToFuture());
+				}
+
+				foreach (var query in list)
+				{
+					var result = (await (query.GetEnumerableAsync())).ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+
+				Assert.That(Sfi.Statistics.PrepareStatementCount , Is.EqualTo(0), "Future queries must be retrieved from cache");
+			}
+
+			using (var s = OpenSession())
+			using (var tx = s.BeginTransaction())
+			{
+				await (s.DeleteAsync("from Person"));
+				await (tx.CommitAsync());
+			}
+		}
 	}
 }

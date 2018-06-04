@@ -15,6 +15,7 @@ namespace NHibernate.Linq
 {
 	public partial interface INhQueryProvider : IQueryProvider
 	{
+		//TODO: Obsolete? We don't really need ExecuteFuture, ExecuteFutureValue for unified batch
 		IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression);
 		IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression);
 		void SetResultTransformerAndAdditionalCriteria(IQuery query, NhLinqExpression nhExpression, IDictionary<string, Tuple<object, IType>> parameters);
@@ -25,6 +26,7 @@ namespace NHibernate.Linq
 	public interface INhQueryProviderSupportMultiBatch
 	{
 		IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression);
+		IMultiAnyQueryBatch GetFutureMultiBatch();
 	}
 
 	/// <summary>
@@ -129,6 +131,11 @@ namespace NHibernate.Linq
 		public virtual IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
+			if (FutureSettings.IsUnifiedFuture)
+			{
+				var linqBatchItem = new MultiAnyLinqQuery<TResult>(query, nhExpression);
+				return Session.GetFutureMultiBatch().AddAsValue(linqBatchItem);
+			}
 
 			var result = query.FutureValue<TResult>();
 			if (result is IDelayedValue delayedValue)
@@ -285,6 +292,11 @@ namespace NHibernate.Linq
 		{
 			expression = PrepareQuery(exrpession, out var query);
 			return query;
+		}
+
+		public IMultiAnyQueryBatch GetFutureMultiBatch()
+		{
+			return Session.GetFutureMultiBatch();
 		}
 	}
 }

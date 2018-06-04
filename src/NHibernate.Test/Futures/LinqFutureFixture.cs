@@ -401,5 +401,97 @@ namespace NHibernate.Test.Futures
 				tx.Commit();
 			}
 		}
+
+		[Test]
+		public void FutureCombineCachedAndNonCachedQueries()
+		{
+			using (var s = OpenSession())
+			using (var tx = s.BeginTransaction())
+			{
+				var p1 = new Person
+				{
+					Name = "Person name",
+					Age = 15
+				};
+				var p2 = new Person
+				{
+					Name = "Person name",
+					Age = 20
+				};
+
+				s.Save(p1);
+				s.Save(p2);
+				tx.Commit();
+			}
+
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IFutureEnumerable<Person>>();
+				for (var i = 0; i < 5; i++)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+					list.Add(query.WithOptions(x => x.SetCacheable(true)).ToFuture());
+				}
+
+				foreach (var query in list)
+				{
+					var result = query.GetEnumerable().ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+			}
+
+			//Check query.List returns data from cache
+			Sfi.Statistics.IsStatisticsEnabled = true;
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IEnumerable<Person>>();
+				for (var i = 0; i < 5; i++)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+
+					list.Add(query.WithOptions(x => x.SetCacheable(true)).ToList());
+				}
+
+				foreach (var query in list)
+				{
+					var result = query.ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+
+				Assert.That(Sfi.Statistics.PrepareStatementCount, Is.EqualTo(0), "Queries must be retrieved from cache");
+			}
+
+			//Check another Future returns data from cache
+			Sfi.Statistics.Clear();
+			using (var s = Sfi.OpenSession())
+			{
+				var list = new List<IFutureEnumerable<Person>>();
+				//Reverse order of queries added to cache
+				for (var i = 5 - 1; i >= 0; i--)
+				{
+					var i1 = i;
+					var query = s.Query<Person>().Where(x => x.Age > i1);
+
+					list.Add(query.WithOptions(x => x.SetCacheable(true)).ToFuture());
+				}
+
+				foreach (var query in list)
+				{
+					var result = query.GetEnumerable().ToList();
+					Assert.That(result.Count, Is.EqualTo(2));
+				}
+
+				Assert.That(Sfi.Statistics.PrepareStatementCount , Is.EqualTo(0), "Future queries must be retrieved from cache");
+			}
+
+			using (var s = OpenSession())
+			using (var tx = s.BeginTransaction())
+			{
+				s.Delete("from Person");
+				tx.Commit();
+			}
+		}
 	}
 }

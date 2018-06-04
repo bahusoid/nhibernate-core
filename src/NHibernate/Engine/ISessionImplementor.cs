@@ -35,6 +35,11 @@ namespace NHibernate.Engine
 				// breaking change in case in custom session implementation is used.
 				new SessionIdLoggingContext(session.SessionId);
 		}
+
+		internal static IMultiAnyQueryBatch GetFutureMultiBatch(this ISessionImplementor session)
+		{
+			return (session as AbstractSessionImpl)?.FutureMultiBatch;
+		}
 	}
 
 	/// <summary>
