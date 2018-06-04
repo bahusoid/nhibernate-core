@@ -1165,63 +1165,17 @@ namespace NHibernate.Loader
 		/// <param name="querySpaces"></param>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
 		/// <returns></returns>
-		protected Task<IList> ListAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
+		protected async Task<IList> ListAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
 		{
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return Task.FromCanceled<IList>(cancellationToken);
-			}
-			try
-			{
-				bool cacheable = _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable;
-
-				if (cacheable)
-				{
-					return ListUsingQueryCacheAsync(session, queryParameters, querySpaces, cancellationToken);
-				}
-				return ListIgnoreQueryCacheAsync(session, queryParameters, cancellationToken);
-			}
-			catch (Exception ex)
-			{
-				return Task.FromException<IList>(ex);
-			}
+			cancellationToken.ThrowIfCancellationRequested();
+			return ListUsingQueryCacheOrNull(session, queryParameters, querySpaces)
+					?? await (ListIgnoreQueryCacheAsync(session, queryParameters, cancellationToken)).ConfigureAwait(false);
 		}
 
 		private async Task<IList> ListIgnoreQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			return GetResultList(await (DoListAsync(session, queryParameters, cancellationToken)).ConfigureAwait(false), queryParameters.ResultTransformer);
-		}
-
-		private async Task<IList> ListUsingQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			IQueryCache queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
-
-			QueryKey key = GenerateQueryKey(session, queryParameters);
-
-			IList result = await (GetResultFromQueryCacheAsync(session, queryParameters, querySpaces, queryCache, key, cancellationToken)).ConfigureAwait(false);
-
-			if (result == null)
-			{
-				result = await (DoListAsync(session, queryParameters, key.ResultTransformer, cancellationToken)).ConfigureAwait(false);
-				await (PutResultInQueryCacheAsync(session, queryParameters, queryCache, key, result, cancellationToken)).ConfigureAwait(false);
-			}
-
-			IResultTransformer resolvedTransformer = ResolveResultTransformer(queryParameters.ResultTransformer);
-			if (resolvedTransformer != null)
-			{
-				result = (AreResultSetRowsTransformedImmediately()
-							  ? key.ResultTransformer.RetransformResults(
-								  result,
-								  ResultRowAliases,
-								  queryParameters.ResultTransformer,
-								  IncludeInResultRow)
-							  : key.ResultTransformer.UntransformToTuples(result)
-						 );
-			}
-
-			return GetResultList(result, queryParameters.ResultTransformer);
 		}
 
 		private async Task<IList> GetResultFromQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters,
@@ -1269,7 +1223,7 @@ namespace NHibernate.Loader
 			return result;
 		}
 
-		private async Task PutResultInQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters,
+		internal async Task PutResultInQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters,
 										   IQueryCache queryCache, QueryKey key, IList result, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
