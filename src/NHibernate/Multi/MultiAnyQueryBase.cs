@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Linq;
+using System.Threading.Tasks;
 using NHibernate.Cache;
 using NHibernate.Engine;
 using NHibernate.SqlCommand;
@@ -22,7 +23,6 @@ namespace NHibernate
 		private IList[] _loaderResults;
 
 		private List<QueryLoadInfo> _queryInfos;
-		private DbDataReader _reader;
 		private IList<TResult> _finalResults;
 
 		protected class QueryLoadInfo
@@ -33,6 +33,7 @@ namespace NHibernate
 			//Cache related properties:
 			public ISet<string> QuerySpaces;
 			public Action<IList> PutInCacheAction;
+			public Task<Action<IList>> PutInCacheActionAsync;
 			public CacheableResultTransformer CacheTransformer;
 		}
 
@@ -67,6 +68,7 @@ namespace NHibernate
 				if (cache != null)
 				{
 					qi.PutInCacheAction = (list) => qi.Loader.PutResultInQueryCache(Session, qi.Parameters, cache, key, list);
+					qi.PutInCacheActionAsync = qi.Loader.PutResultInQueryCacheAsync(Session, qi.Parameters, cache, key, list, );
 				}
 
 				yield return qi.Loader.CreateSqlCommand(qi.Parameters, Session);
@@ -104,7 +106,6 @@ namespace NHibernate
 				var index = i;
 				yield return reader =>
 				{
-					_reader = reader;
 					if (advanceSelection)
 					{
 						Loader.Loader.Advance(reader, selection);
@@ -143,6 +144,11 @@ namespace NHibernate
 
 						tmpResults.Add(o);
 					}
+
+					if (index == _queryInfos.Count - 1)
+					{
+						InitializeEntitiesAndCollections(reader);
+					}
 					return rowCount;
 				};
 
@@ -152,15 +158,9 @@ namespace NHibernate
 
 		public void PostProcess()
 		{
-			if (_reader == null)
-				return;
-
 			for (int i = 0; i < _queryInfos.Count; i++)
 			{
 				Loader.Loader loader = _queryInfos[i].Loader;
-				loader.InitializeEntitiesAndCollections(
-					_hydratedObjects[i], _reader, Session, Session.PersistenceContext.DefaultReadOnly);
-
 				if (_subselectResultKeys[i] != null)
 				{
 					loader.CreateSubselects(_subselectResultKeys[i], _queryInfos[i].Parameters, Session);
@@ -169,7 +169,6 @@ namespace NHibernate
 				//Maybe put in cache...
 				_queryInfos[i].PutInCacheAction?.Invoke(_loaderResults[i]);
 			}
-			_reader = null;
 		}
 
 		public void ExecuteNonBatchable()
@@ -208,6 +207,15 @@ namespace NHibernate
 		}
 
 		protected abstract List<TResult> DoGetResults();
+
+		private void InitializeEntitiesAndCollections(DbDataReader reader)
+		{
+			for (int i = 0; i < _queryInfos.Count; i++)
+			{
+				_queryInfos[i].Loader.InitializeEntitiesAndCollections(
+									_hydratedObjects[i], reader, Session, Session.PersistenceContext.DefaultReadOnly);
+			}
+		}
 
 		private static void NewArray<T>(int count, out T[] list)
 		{

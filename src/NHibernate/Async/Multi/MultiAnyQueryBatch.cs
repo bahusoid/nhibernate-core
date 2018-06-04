@@ -98,7 +98,7 @@ namespace NHibernate
 
 				foreach (var multiSource in _queries)
 				{
-					await (multiSource.PostProcessAsync(cancellationToken)).ConfigureAwait(false);
+					multiSource.PostProcess();
 				}
 			}
 			catch (OperationCanceledException) { throw; }

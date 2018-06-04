@@ -23,12 +23,6 @@ namespace NHibernate
 	{
 
 		/// <summary>
-		/// Executed after all commands are processed
-		/// </summary>
-		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken));
-
-		/// <summary>
 		/// Immediate query execution in case dialect is non batchable
 		/// </summary>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
