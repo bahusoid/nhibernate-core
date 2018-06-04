@@ -26,21 +26,6 @@ namespace NHibernate
 	public abstract partial class MultiAnyQueryBase<TResult> : IMultiAnyQuery, IMultiAnyQuery<TResult>
 	{
 
-		protected abstract Task<List<QueryLoadInfo>> GetQueryLoadInfoAsync(CancellationToken cancellationToken = default(CancellationToken));
-
-		public virtual async Task InitAsync(ISessionImplementor session, CancellationToken cancellationToken = default(CancellationToken))
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			Session = session;
-
-			_queryInfos = await (GetQueryLoadInfoAsync(cancellationToken)).ConfigureAwait(false);
-
-			var count = _queryInfos.Count;
-			NewArray(count, out _hydratedObjects);
-			NewArray(count, out _subselectResultKeys);
-			NewArray(count, out _loaderResults);
-		}
-
 		public async Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			cancellationToken.ThrowIfCancellationRequested();

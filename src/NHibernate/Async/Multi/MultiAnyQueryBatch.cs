@@ -32,7 +32,7 @@ namespace NHibernate
 				return;
 			try
 			{
-				await (InitAsync(cancellationToken)).ConfigureAwait(false);
+				Init();
 
 				if (!Session.Factory.ConnectionProvider.Driver.SupportsMultipleQueries)
 				{
@@ -54,20 +54,17 @@ namespace NHibernate
 			}
 		}
 
-		private async Task InitAsync(CancellationToken cancellationToken = default(CancellationToken))
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			foreach (var query in _queries)
-			{
-				await (query.InitAsync(Session, cancellationToken)).ConfigureAwait(false);
-			}
-		}
-
 		protected async Task DoExecuteAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			var resultSetsCommand = Session.Factory.ConnectionProvider.Driver.GetResultSetsCommand(Session);
 			CombineQueries(resultSetsCommand);
+
+			var querySpaces = new HashSet<string>(_queries.SelectMany(t => t.GetQuerySpaces()));
+			if (resultSetsCommand.HasQueries)
+			{
+				await (Session.AutoFlushIfRequiredAsync(querySpaces, cancellationToken)).ConfigureAwait(false);
+			}
 
 			bool statsEnabled = Session.Factory.Statistics.IsStatisticsEnabled;
 			Stopwatch stopWatch = null;

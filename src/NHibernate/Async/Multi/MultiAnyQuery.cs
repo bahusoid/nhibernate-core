@@ -20,22 +20,6 @@ namespace NHibernate
 	public partial class MultiAnyQuery<TResult> : MultiAnyQueryBase<TResult>, IMultiAnyQuery<TResult>
 	{
 
-		protected override async Task<List<QueryLoadInfo>> GetQueryLoadInfoAsync(CancellationToken cancellationToken = default(CancellationToken))
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			Query.VerifyParameters();
-			QueryParameters queryParameters = Query.GetQueryParameters();
-			queryParameters.ValidateParameters();
-
-			return (await (Query.GetTranslatorsAsync(Session, queryParameters, cancellationToken)).ConfigureAwait(false)).Select(
-				t => new QueryLoadInfo()
-				{
-					Loader = t.Loader,
-					Parameters = queryParameters,
-					QuerySpaces = new HashSet<string>(t.QuerySpaces),
-				}).ToList();
-		}
-
 		protected override Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			if (cancellationToken.IsCancellationRequested)

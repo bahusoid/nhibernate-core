@@ -89,6 +89,12 @@ namespace NHibernate
 			var resultSetsCommand = Session.Factory.ConnectionProvider.Driver.GetResultSetsCommand(Session);
 			CombineQueries(resultSetsCommand);
 
+			var querySpaces = new HashSet<string>(_queries.SelectMany(t => t.GetQuerySpaces()));
+			if (resultSetsCommand.HasQueries)
+			{
+				Session.AutoFlushIfRequired(querySpaces);
+			}
+
 			bool statsEnabled = Session.Factory.Statistics.IsStatisticsEnabled;
 			Stopwatch stopWatch = null;
 			if (statsEnabled)

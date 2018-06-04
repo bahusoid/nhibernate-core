@@ -504,5 +504,28 @@ namespace NHibernate.Test.Futures
 				await (tx.CommitAsync());
 			}
 		}
+
+		[Test]
+		public async Task FutureAutoFlushAsync()
+		{
+			using (var s = OpenSession())
+			using (var tx = s.BeginTransaction())
+			{
+				s.FlushMode = FlushMode.Auto;
+				var p1 = new Person
+				{
+					Name = "Person name",
+					Age = 15
+				};
+				await (s.SaveAsync(p1));
+				await (s.FlushAsync());
+
+				await (s.DeleteAsync(p1));
+				var count = await (s.QueryOver<Person>().ToRowCountQuery().FutureValue<int>().GetValueAsync());
+				await (tx.CommitAsync());
+
+				Assert.That(count, Is.EqualTo(0), "Session wasn't auto flushed.");
+			}
+		}
 	}
 }

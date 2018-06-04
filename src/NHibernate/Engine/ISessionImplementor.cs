@@ -251,6 +251,8 @@ namespace NHibernate.Engine
 
 		IQuery GetNamedSQLQuery(string name);
 		
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
 		IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar); // NH specific for MultiQuery
 
 		IInterceptor Interceptor { get; }

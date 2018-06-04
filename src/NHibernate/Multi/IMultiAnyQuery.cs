@@ -51,5 +51,10 @@ namespace NHibernate
 		/// Immediate query execution in case dialect is non batchable
 		/// </summary>
 		void ExecuteNonBatchable();
+
+		/// <summary>
+		/// Get cache query spaces
+		/// </summary>
+		IEnumerable<string> GetQuerySpaces();
 	}
 }

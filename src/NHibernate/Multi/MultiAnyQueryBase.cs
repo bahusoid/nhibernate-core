@@ -177,6 +177,11 @@ namespace NHibernate
 			_finalResults = ExecuteQueryNow();
 		}
 
+		public IEnumerable<string> GetQuerySpaces()
+		{
+			return _queryInfos.SelectMany(q => q.QuerySpaces);
+		}
+
 		protected abstract IList<TResult> ExecuteQueryNow();
 
 		protected List<T> GetTypedResults<T>()

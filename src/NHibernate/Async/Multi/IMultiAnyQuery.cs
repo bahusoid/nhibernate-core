@@ -21,13 +21,6 @@ namespace NHibernate
 
 	public partial interface IMultiAnyQuery
 	{
-		/// <summary>
-		/// Method is called right before batch execution.
-		/// Can be used for various delayed initialization logic.
-		/// </summary>
-		/// <param name="session"></param>
-		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		Task InitAsync(ISessionImplementor session, CancellationToken cancellationToken = default(CancellationToken));
 
 		/// <summary>
 		/// Executed after all commands are processed

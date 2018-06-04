@@ -116,15 +116,5 @@ namespace NHibernate.Impl
 				After();
 			}
 		}
-
-		protected internal override async Task<IEnumerable<ITranslator>> GetTranslatorsAsync(ISessionImplementor sessionImplementor, QueryParameters queryParameters, CancellationToken cancellationToken)
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			// NOTE: updates queryParameters.NamedParameters as (desired) side effect
-			var queryExpression = ExpandParameters(queryParameters.NamedParameters);
-
-			return (await (sessionImplementor.GetQueriesAsync(queryExpression, false, cancellationToken)).ConfigureAwait(false))
-									 .Select(queryTranslator => new HqlTranslatorWrapper(queryTranslator));
-		}
 	}
 }

@@ -20,22 +20,6 @@ namespace NHibernate
 	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>, IMultiAnyQuery<T>
 	{
 
-		protected override Task<List<QueryLoadInfo>> GetQueryLoadInfoAsync(CancellationToken cancellationToken = default(CancellationToken))
-		{
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return Task.FromCanceled<List<QueryLoadInfo>>(cancellationToken);
-			}
-			try
-			{
-				return Task.FromResult<List<QueryLoadInfo>>(GetQueryLoadInfo());
-			}
-			catch (System.Exception ex)
-			{
-				return Task.FromException<List<QueryLoadInfo>>(ex);
-			}
-		}
-
 		protected override Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			if (cancellationToken.IsCancellationRequested)

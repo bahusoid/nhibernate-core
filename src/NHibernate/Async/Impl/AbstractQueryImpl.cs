@@ -56,7 +56,5 @@ namespace NHibernate.Impl
 		}
 
 		#endregion
-
-		protected internal abstract Task<IEnumerable<ITranslator>> GetTranslatorsAsync(ISessionImplementor sessionImplementor, QueryParameters queryParameters, CancellationToken cancellationToken);
 	}
 }
