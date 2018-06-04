@@ -867,11 +867,6 @@ namespace NHibernate.Impl
 			protected internal set { throw new NotSupportedException("future queries are not supported for stateless session"); }
 		}
 
-		public override IMultiAnyQueryBatch FutureMultiBatch
-		{
-			get { throw new NotSupportedException("future queries are not supported for stateless session"); }
-		}
-
 		public override IEntityPersister GetEntityPersister(string entityName, object obj)
 		{
 			using (BeginProcess())

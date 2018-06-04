@@ -177,6 +177,36 @@ namespace NHibernate.Test.Futures
 		}
 
 		[Test]
+		public async Task CanUseFutureQueryAndQueryOverForSatelessSessionAsync()
+		{
+			IgnoreThisTestIfMultipleQueriesArentSupportedByDriver();
+
+			using (var s = Sfi.OpenStatelessSession())
+			{
+				var persons10 = s.Query<Person>()
+					.Take(10)
+					.ToFuture();
+				var persons5 = s.QueryOver<Person>()
+					.Take(5)
+					.Future();
+
+				using (var logSpy = new SqlLogSpy())
+				{
+					foreach (var person in await (persons5.GetEnumerableAsync()))
+					{
+					}
+
+					foreach (var person in await (persons10.GetEnumerableAsync()))
+					{
+					}
+
+					var events = logSpy.Appender.GetEvents();
+					Assert.AreEqual(1, events.Length);
+				}
+			}
+		}
+
+		[Test]
 		public async Task CanUseFutureQueryWithAnonymousTypeAsync()
 		{
 			IgnoreThisTestIfMultipleQueriesArentSupportedByDriver();

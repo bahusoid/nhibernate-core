@@ -53,8 +53,6 @@ namespace NHibernate.Impl
 		private FutureCriteriaBatch futureCriteriaBatch;
 		[NonSerialized]
 		private FutureQueryBatch futureQueryBatch;
-		[NonSerialized]
-		private IMultiAnyQueryBatch _futureMultiBatch;
 
 		[NonSerialized]
 		private readonly EventListeners listeners;
@@ -237,11 +235,6 @@ namespace NHibernate.Impl
 			{
 				futureQueryBatch = value;
 			}
-		}
-
-		public override IMultiAnyQueryBatch FutureMultiBatch
-		{
-			get => _futureMultiBatch ?? (_futureMultiBatch = new MultiAnyQueryBatch(this));
 		}
 
 		public ConnectionReleaseMode ConnectionReleaseMode

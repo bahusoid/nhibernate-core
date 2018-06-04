@@ -30,6 +30,9 @@ namespace NHibernate.Impl
 		private ISessionFactoryImplementor _factory;
 		private FlushMode _flushMode;
 
+		[NonSerialized]
+		private IMultiAnyQueryBatch _futureMultiBatch;
+
 		private bool closed;
 
 		/// <summary>Get the current NHibernate transaction.</summary>
@@ -280,10 +283,9 @@ namespace NHibernate.Impl
 		public abstract FutureCriteriaBatch FutureCriteriaBatch { get; protected internal set; }
 		public abstract FutureQueryBatch FutureQueryBatch { get; protected internal set; }
 	
-		//TODO 6.0: Make abstract
 		public virtual IMultiAnyQueryBatch FutureMultiBatch
 		{
-			get => throw new NotImplementedException();
+			get => _futureMultiBatch ?? (_futureMultiBatch = new MultiAnyQueryBatch(this));
 		}
 
 		public virtual IInterceptor Interceptor { get; protected set; }
