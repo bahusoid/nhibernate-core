@@ -7,16 +7,13 @@ using NHibernate.Linq;
 using NHibernate.Mapping.ByCode;
 using NHibernate.Transform;
 using NUnit.Framework;
+using NHibernate.Criterion;
 
-namespace NHibernate.Test.Criteria
+namespace NHibernate.Test.Futures
 {
 	[TestFixture]
 	public class MultiAnyQuerytBatchFixture : TestCaseMappingByCode
 	{
-		private const string customEntityName = "CustomEntityName";
-		private EntityWithCompositeId _entityWithCompositeId;
-		private EntityWithNoAssociation _noAssociation;
-		private EntityCustomEntityName _entityWithCustomEntityName;
 		private Guid _parentId;
 		private Guid _eagerId;
 
@@ -114,7 +111,6 @@ namespace NHibernate.Test.Criteria
 				batch.Add(new MultiAnyLinqQuery<EntityComplex>(session.Query<EntityComplex>().Fetch(c => c.ChildrenList)));
 				batch.Execute();
 				var parent = session.Load<EntityComplex>(_parentId);
-				//Assert.That(parent, Is.Not.Null);
 				Assert.That(NHibernateUtil.IsInitialized(parent), Is.True);
 				Assert.That(NHibernateUtil.IsInitialized(parent.ChildrenList), Is.True);
 				
@@ -141,16 +137,6 @@ namespace NHibernate.Test.Criteria
 
 				var results3 = session.QueryOver<EntitySimpleChild>()
 									.List<int>();
-			}
-		}
-
-		[Test, Explicit]
-		public void TestQueryWithSubselect()
-		{
-			using (var sqlLog = new SqlLogSpy())
-			using (var session = OpenSession())
-			{
-				var ec = session.Get<EntityEager>(_eagerId);
 			}
 		}
 
@@ -254,11 +240,14 @@ namespace NHibernate.Test.Criteria
 				rc =>
 				{
 					rc.Id(x => x.Id, m => m.Generator(Generators.GuidComb));
+					rc.ManyToOne(x => x.Parent);
 					rc.Property(x => x.Name);
-				});			
+				});
 			mapper.Class<EntityEager>(
 				rc =>
 				{
+					rc.Lazy(false);
+
 					rc.Id(x => x.Id, m => m.Generator(Generators.GuidComb));
 					rc.Property(x => x.Name);
 
@@ -271,65 +260,20 @@ namespace NHibernate.Test.Criteria
 								m.Lazy(CollectionLazy.NoLazy);
 							},
 							a => a.OneToMany());
-				});			
+
+					rc. Bag(ep => ep.ChildrenListEager,
+							m =>
+							{
+								m.Lazy(CollectionLazy.NoLazy);
+							},
+							a => a.OneToMany());
+				});
 			mapper.Class<EntitySubselectChild>(
 				rc =>
 				{
 					rc.Id(x => x.Id, m => m.Generator(Generators.GuidComb));
 					rc.Property(x => x.Name);
 					rc.ManyToOne(c => c.Parent);
-				});
-
-			mapper.Class<EntityWithCompositeId>(
-				rc =>
-				{
-					rc.ComponentAsId(
-						e => e.Key,
-						ekm =>
-						{
-							ekm.Property(ek => ek.Id1);
-							ekm.Property(ek => ek.Id2);
-						});
-
-					rc.Property(e => e.Name);
-				});
-
-			mapper.Class<EntityWithCompositeId>(
-				rc =>
-				{
-					rc.ComponentAsId(
-						e => e.Key,
-						ekm =>
-						{
-							ekm.Property(ek => ek.Id1);
-							ekm.Property(ek => ek.Id2);
-						});
-
-					rc.Property(e => e.Name);
-				});
-
-			mapper.Class<EntityWithNoAssociation>(
-				rc =>
-				{
-					rc.Id(e => e.Id, m => m.Generator(Generators.GuidComb));
-
-					rc.Property(e => e.Complex1Id);
-					rc.Property(e => e.Complex2Id);
-					rc.Property(e => e.Simple1Id);
-					rc.Property(e => e.Simple2Id);
-					rc.Property(e => e.Composite1Key1);
-					rc.Property(e => e.Composite1Key2);
-					rc.Property(e => e.CustomEntityNameId);
-
-				});
-
-			mapper.Class<EntityCustomEntityName>(
-				rc =>
-				{
-					rc.EntityName(customEntityName);
-
-					rc.Id(e => e.Id, m => m.Generator(Generators.GuidComb));
-					rc.Property(e => e.Name);
 				});
 
 			return mapper.CompileMappingForAllExplicitlyAddedEntities();
@@ -354,14 +298,13 @@ namespace NHibernate.Test.Criteria
 			{
 				var child1 = new EntitySimpleChild
 				{
-					Name = "Child1"
+					Name = "Child1",
 				};
 				var child2 = new EntitySimpleChild
 				{
-					Name = "Child1"
+					Name = "Child2"
 				};
-
-				var parent = new EntityComplex
+				var complex = new EntityComplex
 				{
 					Name = "ComplexEnityParent",
 					Child1 = child1,
@@ -370,69 +313,46 @@ namespace NHibernate.Test.Criteria
 					SameTypeChild = new EntityComplex()
 					{
 						Name = "ComplexEntityChild"
-					}
+					},
 				};
-				
+				child1.Parent = child2.Parent = complex;
+
 				var eager = new EntityEager()
 				{
-					Name = "eager",
-					ChildrenListSubselect = new List<EntitySubselectChild>()
+					Name = "eager1",
+				};
+
+				var eager2 = new EntityEager()
+				{
+					Name = "eager2",
+				};
+				eager.ChildrenListSubselect = new List<EntitySubselectChild>()
 					{
 						new EntitySubselectChild()
 						{
 							Name = "subselect1",
-							Parent = parent,
+							Parent = eager,
 						},
 						new EntitySubselectChild()
 						{
 							Name = "subselect2",
-							Parent = parent,
+							Parent = eager,
 						},
-					}
-				};
+					};
 
-				_entityWithCompositeId = new EntityWithCompositeId
-				{
-					Key = new CompositeKey
-					{
-						Id1 = 1,
-						Id2 = 2
-					},
-					Name = "Composite"
-				};
+				
 
 				session.Save(child1);
 				session.Save(child2);
-				session.Save(parent.SameTypeChild);
-				session.Save(parent);
-				session.Save(_entityWithCompositeId);
+				session.Save(complex.SameTypeChild);
+				session.Save(complex);
 				session.Save(eager);
-
-				_entityWithCustomEntityName = new EntityCustomEntityName()
-				{
-					Name = "EntityCustomEntityName"
-				};
-
-				session.Save(customEntityName, _entityWithCustomEntityName);
-
-				_noAssociation = new EntityWithNoAssociation()
-				{
-					Complex1Id = parent.Id,
-					Complex2Id = parent.SameTypeChild.Id,
-					Composite1Key1 = _entityWithCompositeId.Key.Id1,
-					Composite1Key2 = _entityWithCompositeId.Key.Id2,
-					Simple1Id = child1.Id,
-					Simple2Id = child2.Id,
-					CustomEntityNameId = _entityWithCustomEntityName.Id
-				};
-				
-
-				session.Save(_noAssociation);
+				session.Save(eager2);
 
 				session.Flush();
 				transaction.Commit();
 
-				_parentId = parent.Id;
+				_parentId = complex.Id;
 				_eagerId = eager.Id;
 			}
 		}

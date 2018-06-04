@@ -7,27 +7,12 @@ namespace NHibernate.Test.Criteria
 	{
 		public virtual Guid Id { get; set; }
 		public virtual string Name { get; set; }
-	}	
-	
-	public class EntitySubselectChild
-	{
-		public virtual Guid Id { get; set; }
-		public virtual string Name { get; set; }
-		public virtual EntityComplex Parent { get; set; }
 	}
 	
 	public class EntityCustomEntityName
 	{
 		public virtual Guid Id { get; set; }
 		public virtual string Name { get; set; }
-	}
-
-	public class EntityEager
-	{
-		public virtual Guid Id { get; set; }
-		public virtual string Name { get; set; }
-
-		public virtual IList<EntitySubselectChild> ChildrenListSubselect { get; set; }
 	}
 
 	public class EntityComplex
