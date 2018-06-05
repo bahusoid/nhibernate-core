@@ -206,7 +206,7 @@ namespace NHibernate.Impl
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by MultiAnyQueryBatch")]
+		[Obsolete("Replaced by QueryBatch")]
 		public override FutureCriteriaBatch FutureCriteriaBatch
 		{
 			get
@@ -222,7 +222,7 @@ namespace NHibernate.Impl
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by MultiAnyQueryBatch")]
+		[Obsolete("Replaced by QueryBatch")]
 		public override FutureQueryBatch FutureQueryBatch
 		{
 			get

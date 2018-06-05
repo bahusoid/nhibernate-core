@@ -10,109 +10,109 @@ namespace NHibernate
 {
 	public static partial class FutureExtensions
 	{
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IMultiAnyQueryBatch batch, IQueryOver queryOver)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver queryOver)
 		{
 			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, queryOver));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IMultiAnyQueryBatch batch, ICriteria criteria)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, ICriteria criteria)
 		{
 			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, criteria));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IMultiAnyQueryBatch batch, IQuery query)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQuery query)
 		{
 			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IMultiAnyQueryBatch batch, IQueryable<TResult> query)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
 		{
 			return new FutureEnumerable<TResult>(AddAsList(batch, query));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQuery query)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQuery query)
 		{
 			return AddAsList(batch, For<TResult>(query));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, ICriteria query)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, ICriteria query)
 		{
 			return AddAsList(batch, For<TResult>(query));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQueryOver queryOver)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryOver queryOver)
 		{
 			return AddAsList(batch, For<TResult>(queryOver));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQueryOver<TResult> queryOver)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryOver<TResult> queryOver)
 		{
-			return AddAsList(batch, new MultiAnyCriteriaQuery<TResult>(queryOver.RootCriteria));
+			return AddAsList(batch, new CriteriaBatchItem<TResult>(queryOver.RootCriteria));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQueryable<TResult> query)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
 		{
 			return AddAsList(batch, For(query));
 		}
 
-		public static IFutureList<TResult> AddAsList<TSource, TResult>(this IMultiAnyQueryBatch batch, IQueryable<TSource> query, Expression<Func<IQueryable<TSource>, TResult>> selector)
+		public static IFutureList<TResult> AddAsList<TSource, TResult>(this IQueryBatch batch, IQueryable<TSource> query, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
 			return AddAsList(batch, For(query, selector));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IMultiAnyQuery<TResult> query)
+		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
-			batch.Add((IMultiAnyQuery) query);
+			batch.Add((IQueryBatchItem) query);
 			return new FutureList<TResult>(batch, query);
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TSource, TResult>(this IMultiAnyQueryBatch batch, IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
+		public static IFutureValue<TResult> AddAsValue<TSource, TResult>(this IQueryBatch batch, IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
 			return AddAsValue(batch, For(source, selector));
 		}
 
-		public static IFutureValue<TSource> AddAsValue<TSource>(this IMultiAnyQueryBatch batch, IQueryable<TSource> source)
+		public static IFutureValue<TSource> AddAsValue<TSource>(this IQueryBatch batch, IQueryable<TSource> source)
 		{
 			return AddAsValue(batch, For(source));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IMultiAnyQueryBatch batch, ICriteria query)
+		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, ICriteria query)
 		{
 			return AddAsValue(batch, For<TResult>(query));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IMultiAnyQueryBatch batch, IQuery query)
+		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQuery query)
 		{
 			return AddAsValue(batch, For<TResult>(query));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IMultiAnyQueryBatch batch, IMultiAnyQuery<TResult> query)
+		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
-			batch.Add((IMultiAnyQuery) query);
+			batch.Add((IQueryBatchItem) query);
 			return new FutureValue<TResult>(batch, query);
 		}
 
-		private static MultiAnyLinqQuery<TResult> For<TResult>(IQueryable<TResult> source)
+		private static LinqBatchItem<TResult> For<TResult>(IQueryable<TResult> source)
 		{
-			return new MultiAnyLinqQuery<TResult>(source);
+			return new LinqBatchItem<TResult>(source);
 		}
 
-		private static MultiAnyLinqQuery<TResult> For<TSource, TResult>(IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
+		private static LinqBatchItem<TResult> For<TSource, TResult>(IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
-			return MultiAnyLinqQuery<TSource>.GetForSelector(source, selector);
+			return LinqBatchItem<TSource>.GetForSelector(source, selector);
 		}
 
-		private static MultiAnyQuery<TResult> For<TResult>(IQuery query)
+		private static QueryBatchItem<TResult> For<TResult>(IQuery query)
 		{
-			return new MultiAnyQuery<TResult>(query);
+			return new QueryBatchItem<TResult>(query);
 		}
 
-		private static MultiAnyCriteriaQuery<TResult> For<TResult>(ICriteria query)
+		private static CriteriaBatchItem<TResult> For<TResult>(ICriteria query)
 		{
-			return new MultiAnyCriteriaQuery<TResult>(query);
+			return new CriteriaBatchItem<TResult>(query);
 		}
 
-		private static MultiAnyCriteriaQuery<TResult> For<TResult>(IQueryOver query)
+		private static CriteriaBatchItem<TResult> For<TResult>(IQueryOver query)
 		{
 			return For<TResult>(query.RootCriteria);
 		}
@@ -121,12 +121,12 @@ namespace NHibernate
 
 		partial class FutureValue<TResult> : IFutureValue<TResult>
 		{
-			private IMultiAnyQueryBatch _batch;
-			private IMultiAnyQuery<TResult> _query;
+			private IQueryBatch _batch;
+			private IQueryBatchItem<TResult> _query;
 
 			private TResult _result;
 
-			public FutureValue(IMultiAnyQueryBatch batch, IMultiAnyQuery<TResult> query)
+			public FutureValue(IQueryBatch batch, IQueryBatchItem<TResult> query)
 			{
 				_batch = batch;
 				_query = query;
@@ -152,12 +152,12 @@ namespace NHibernate
 
 		partial class FutureList<TResult> : IFutureList<TResult>
 		{
-			private IMultiAnyQueryBatch _batch;
-			private IMultiAnyQuery<TResult> _query;
+			private IQueryBatch _batch;
+			private IQueryBatchItem<TResult> _query;
 
 			private IList<TResult> _list;
 
-			public FutureList(IMultiAnyQueryBatch batch, IMultiAnyQuery<TResult> query)
+			public FutureList(IQueryBatch batch, IQueryBatchItem<TResult> query)
 			{
 				_batch = batch;
 				_query = query;

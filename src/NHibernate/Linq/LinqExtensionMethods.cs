@@ -2404,9 +2404,9 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureEnumerable<TSource> ToFuture<TSource>(this IQueryable<TSource> source)
 		{
-			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureMultiBatch().AddAsEnumerable(source);
+				return batchProvider.GetFutureBatch().AddAsEnumerable(source);
 			}
 #pragma warning disable CS0618 // Type or member is obsolete
 			var provider = GetNhProvider(source);
@@ -2425,9 +2425,9 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureValue<TSource> ToFutureValue<TSource>(this IQueryable<TSource> source)
 		{
-			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureMultiBatch().AddAsValue(source);
+				return batchProvider.GetFutureBatch().AddAsValue(source);
 			}
 #pragma warning disable CS0618, CS0612// Type or member is obsolete
 			var provider = GetNhProvider(source);
@@ -2449,9 +2449,9 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureValue<TResult> ToFutureValue<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
-			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureMultiBatch().AddAsValue(source, selector);
+				return batchProvider.GetFutureBatch().AddAsValue(source, selector);
 			}
 #pragma warning disable CS0618 // Type or member is obsolete
 			var expression = ReplacingExpressionVisitor

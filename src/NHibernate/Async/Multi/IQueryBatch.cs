@@ -12,7 +12,7 @@ namespace NHibernate
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	public partial interface IMultiAnyQueryBatch
+	public partial interface IQueryBatch
 	{
 		/// <summary>
 		/// Executes batch

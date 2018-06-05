@@ -23,7 +23,7 @@ namespace NHibernate
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	public abstract partial class MultiAnyQueryBase<TResult> : IMultiAnyQuery<TResult>
+	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
 
 		public async Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken))

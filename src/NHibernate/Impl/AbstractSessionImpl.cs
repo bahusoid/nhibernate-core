@@ -31,7 +31,7 @@ namespace NHibernate.Impl
 		private FlushMode _flushMode;
 
 		[NonSerialized]
-		private IMultiAnyQueryBatch _futureMultiBatch;
+		private IQueryBatch _futureMultiBatch;
 
 		private bool closed;
 
@@ -288,9 +288,9 @@ namespace NHibernate.Impl
 		[Obsolete("Replaced by FutureBatch")]
 		public abstract FutureQueryBatch FutureQueryBatch { get; protected internal set; }
 	
-		public virtual IMultiAnyQueryBatch FutureMultiBatch
+		public virtual IQueryBatch FutureBatch
 		{
-			get => _futureMultiBatch ?? (_futureMultiBatch = new MultiAnyQueryBatch(this));
+			get => _futureMultiBatch ?? (_futureMultiBatch = new QueryBatch(this));
 		}
 
 		public virtual IInterceptor Interceptor { get; protected set; }
