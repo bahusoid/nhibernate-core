@@ -2404,7 +2404,7 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureEnumerable<TSource> ToFuture<TSource>(this IQueryable<TSource> source)
 		{
-			if(source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
 			{
 				return batchProvider.GetFutureMultiBatch().AddAsEnumerable(source);
 			}
@@ -2425,7 +2425,7 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureValue<TSource> ToFutureValue<TSource>(this IQueryable<TSource> source)
 		{
-			if(source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
 			{
 				return batchProvider.GetFutureMultiBatch().AddAsValue(source);
 			}
