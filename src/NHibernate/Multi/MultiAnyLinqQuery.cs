@@ -14,11 +14,11 @@ namespace NHibernate
 		private static Delegate _postExecuteTransformer;
 		private static NhLinqExpression _linqEx;
 
-		public MultiAnyLinqQuery(IQueryable query):base(GetQuery(query))
+		public MultiAnyLinqQuery(IQueryable query) : base(GetQuery(query))
 		{
 		}
-		
-		public MultiAnyLinqQuery(IQuery query):base(query)
+
+		public MultiAnyLinqQuery(IQuery query) : base(query)
 		{
 		}
 
@@ -28,10 +28,10 @@ namespace NHibernate
 			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;
 		}
 
-		private MultiAnyLinqQuery(IQueryable query, Expression modifiedOriginalExpression):base(GetQuery(query, modifiedOriginalExpression))
+		private MultiAnyLinqQuery(IQueryable query, Expression modifiedOriginalExpression) : base(GetQuery(query, modifiedOriginalExpression))
 		{
 		}
-		
+
 		public static MultiAnyLinqQuery<TResult> GetForSelector<TResult>(IQueryable<T> query, Expression<Func<IQueryable<T>, TResult>> selector)
 		{
 			var expression = ReplacingExpressionVisitor
@@ -43,7 +43,7 @@ namespace NHibernate
 		private static IQuery GetQuery(IQueryable query, Expression ex = null)
 		{
 			var prov = query.Provider as INhQueryProviderSupportMultiBatch;
-			
+
 			var q = prov.GetPreparedQuery(ex ?? query.Expression, out _linqEx);
 			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;
 			return q;
@@ -84,7 +84,7 @@ namespace NHibernate
 			};
 		}
 
-		public System.Type GetResultTypeIfChanged()
+		private System.Type GetResultTypeIfChanged()
 		{
 			if (_postExecuteTransformer == null)
 			{

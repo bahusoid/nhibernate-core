@@ -23,9 +23,10 @@ namespace NHibernate.Linq
 		Task<TResult> ExecuteAsync<TResult>(Expression expression, CancellationToken cancellationToken);
 	}
 
+	// 6.0 TODO: merge into INhQueryProvider.
 	public interface INhQueryProviderSupportMultiBatch
 	{
-		IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression);
+		IQuery GetPreparedQuery(Expression expression, out NhLinqExpression nhExpression);
 		IMultiAnyQueryBatch GetFutureMultiBatch();
 	}
 
@@ -288,9 +289,9 @@ namespace NHibernate.Linq
 			return query.ExecuteUpdate();
 		}
 
-		public IQuery GetPreparedQuery(Expression exrpession, out NhLinqExpression expression)
+		public IQuery GetPreparedQuery(Expression expression, out NhLinqExpression nhExpression)
 		{
-			expression = PrepareQuery(exrpession, out var query);
+			nhExpression = PrepareQuery(expression, out var query);
 			return query;
 		}
 

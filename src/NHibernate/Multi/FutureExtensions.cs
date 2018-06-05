@@ -37,8 +37,7 @@ namespace NHibernate
 
 		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQueryOver queryOver)
 		{
-
-			return AddAsList(batch,For<TResult>(queryOver));
+			return AddAsList(batch, For<TResult>(queryOver));
 		}
 
 		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQueryOver<TResult> queryOver)
@@ -107,7 +106,7 @@ namespace NHibernate
 		{
 			return new MultiAnyCriteriaQuery<TResult>(query);
 		}
-		
+
 		private static MultiAnyCriteriaQuery<TResult> For<TResult>(IQueryOver query)
 		{
 			return For<TResult>(query.RootCriteria);
