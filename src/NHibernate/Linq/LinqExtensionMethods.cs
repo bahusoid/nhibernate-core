@@ -8,6 +8,7 @@ using NHibernate.Util;
 using Remotion.Linq.Parsing.ExpressionVisitors;
 using System.Threading;
 using System.Threading.Tasks;
+using NHibernate.Engine;
 
 namespace NHibernate.Linq
 {
@@ -2406,7 +2407,7 @@ namespace NHibernate.Linq
 		{
 			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureBatch().AddAsEnumerable(source);
+				return batchProvider.Session.GetFutureBatch().AddAsEnumerable(source);
 			}
 #pragma warning disable CS0618 // Type or member is obsolete
 			var provider = GetNhProvider(source);
@@ -2427,7 +2428,7 @@ namespace NHibernate.Linq
 		{
 			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureBatch().AddAsValue(source);
+				return batchProvider.Session.GetFutureBatch().AddAsValue(source);
 			}
 #pragma warning disable CS0618, CS0612// Type or member is obsolete
 			var provider = GetNhProvider(source);
@@ -2451,7 +2452,7 @@ namespace NHibernate.Linq
 		{
 			if (source.Provider is ISupportFutureBatchNhQueryProvider batchProvider)
 			{
-				return batchProvider.GetFutureBatch().AddAsValue(source, selector);
+				return batchProvider.Session.GetFutureBatch().AddAsValue(source, selector);
 			}
 #pragma warning disable CS0618 // Type or member is obsolete
 			var expression = ReplacingExpressionVisitor

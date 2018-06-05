@@ -31,7 +31,7 @@ namespace NHibernate.Linq
 	public interface ISupportFutureBatchNhQueryProvider
 	{
 		IQuery GetPreparedQuery(Expression expression, out NhLinqExpression nhExpression);
-		IQueryBatch GetFutureBatch();
+		ISessionImplementor Session { get; }
 	}
 
 	/// <summary>
@@ -77,7 +77,7 @@ namespace NHibernate.Linq
 
 		public object Collection { get; }
 
-		protected virtual ISessionImplementor Session
+		public virtual ISessionImplementor Session
 		{
 			get
 			{
@@ -294,11 +294,6 @@ namespace NHibernate.Linq
 		{
 			nhExpression = PrepareQuery(expression, out var query);
 			return query;
-		}
-
-		public IQueryBatch GetFutureBatch()
-		{
-			return Session.GetFutureBatch();
 		}
 	}
 }
