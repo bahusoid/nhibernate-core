@@ -17,7 +17,7 @@ namespace NHibernate
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>, IMultiAnyQuery<T>
+	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>
 	{
 
 		protected override Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))

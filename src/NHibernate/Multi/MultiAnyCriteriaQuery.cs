@@ -5,7 +5,7 @@ using NHibernate.Persister.Entity;
 
 namespace NHibernate
 {
-	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>, IMultiAnyQuery<T>
+	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>
 	{
 		private readonly CriteriaImpl _criteria;
 
