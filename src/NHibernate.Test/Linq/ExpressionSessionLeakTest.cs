@@ -38,9 +38,9 @@ namespace NHibernate.Test.Linq
 			}
 		}
 
-		static readonly PropertyInfo SessionProperty = typeof(DefaultQueryProvider).GetProperty(
-			"Session",
-			BindingFlags.NonPublic | BindingFlags.Instance);
+		private static readonly PropertyInfo SessionProperty = typeof(DefaultQueryProvider).GetProperty(
+			nameof(DefaultQueryProvider.Session),
+			BindingFlags.Public | BindingFlags.Instance);
 
 		[Theory]
 		public void SessionIsNotNullOrResurrected(bool? disposeSession)
