@@ -13,6 +13,7 @@ using NHibernate.Loader.Custom;
 using NHibernate.Persister.Entity;
 using NHibernate.Transaction;
 using NHibernate.Type;
+using NHibernate.Util;
 
 namespace NHibernate.Engine
 {
@@ -36,9 +37,10 @@ namespace NHibernate.Engine
 				new SessionIdLoggingContext(session.SessionId);
 		}
 
+		//6.0 TODO: Expose as ISessionImplementor.FutureBatch and replace method usages with property
 		internal static IQueryBatch GetFutureBatch(this ISessionImplementor session)
 		{
-			return (session as AbstractSessionImpl)?.FutureBatch;
+			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(session, "future batch").FutureBatch;
 		}
 
 		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
