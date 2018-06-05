@@ -301,6 +301,18 @@ namespace NHibernate.Impl
 			set => _flushMode = value;
 		}
 
+		//6.0 TODO: Make abstract
+		/// <summary>
+		/// detect in-memory changes, determine if the changes are to tables
+		/// named in the query and, if so, complete execution the flush
+		/// </summary>
+		/// <param name="querySpaces"></param>
+		/// <returns>Returns true if flush was executed</returns>
+		public virtual bool AutoFlushIfRequired(ISet<string> querySpaces)
+		{
+			return false;
+		}
+
 		public virtual IQuery GetNamedQuery(string queryName)
 		{
 			using (BeginProcess())

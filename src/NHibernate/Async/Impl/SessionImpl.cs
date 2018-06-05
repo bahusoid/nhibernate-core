@@ -37,18 +37,6 @@ namespace NHibernate.Impl
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	internal static partial class SessionImplExtensions
-	{
-		internal static async Task AutoFlushIfRequiredAsync(this ISessionImplementor implementor, ISet<string> querySpaces, CancellationToken cancellationToken)
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			var autoFlushIfRequiredTask = (implementor as SessionImpl)?.AutoFlushIfRequiredAsync(querySpaces, cancellationToken);
-			if (autoFlushIfRequiredTask != null)
-			{
-				await (autoFlushIfRequiredTask).ConfigureAwait(false);
-			}
-		}
-	}
 	public sealed partial class SessionImpl : AbstractSessionImpl, IEventSource, ISerializable, IDeserializationCallback
 	{
 
@@ -691,8 +679,8 @@ namespace NHibernate.Impl
 		/// </summary>
 		/// <param name="querySpaces"></param>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		/// <returns></returns>
-		internal async Task<bool> AutoFlushIfRequiredAsync(ISet<string> querySpaces, CancellationToken cancellationToken)
+		/// <returns>Returns true if flush was executed</returns>
+		public override async Task<bool> AutoFlushIfRequiredAsync(ISet<string> querySpaces, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			using (BeginProcess())

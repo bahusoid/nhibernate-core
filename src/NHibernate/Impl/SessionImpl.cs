@@ -25,14 +25,6 @@ using NHibernate.Util;
 
 namespace NHibernate.Impl
 {
-	internal static partial class SessionImplExtensions
-	{
-		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
-		{
-			(implementor as SessionImpl)?.AutoFlushIfRequired(querySpaces);
-		}
-	}
-
 	/// <summary>
 	/// Concrete implementation of an <see cref="ISession" />, also the central, organizing component
 	/// of NHibernate's internal implementation.
@@ -1044,8 +1036,8 @@ namespace NHibernate.Impl
 		/// named in the query and, if so, complete execution the flush
 		/// </summary>
 		/// <param name="querySpaces"></param>
-		/// <returns></returns>
-		internal bool AutoFlushIfRequired(ISet<string> querySpaces)
+		/// <returns>Returns true if flush was executed</returns>
+		public override bool AutoFlushIfRequired(ISet<string> querySpaces)
 		{
 			using (BeginProcess())
 			{

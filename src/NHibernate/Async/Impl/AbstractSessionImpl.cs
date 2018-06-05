@@ -166,6 +166,30 @@ namespace NHibernate.Impl
 		public abstract Task<object> GetEntityUsingInterceptorAsync(EntityKey key, CancellationToken cancellationToken);
 		public abstract Task<int> ExecuteNativeUpdateAsync(NativeSQLQuerySpecification specification, QueryParameters queryParameters, CancellationToken cancellationToken);
 
+		//6.0 TODO: Make abstract
+		/// <summary>
+		/// detect in-memory changes, determine if the changes are to tables
+		/// named in the query and, if so, complete execution the flush
+		/// </summary>
+		/// <param name="querySpaces"></param>
+		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
+		/// <returns>Returns true if flush was executed</returns>
+		public virtual Task<bool> AutoFlushIfRequiredAsync(ISet<string> querySpaces, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<bool>(cancellationToken);
+			}
+			try
+			{
+				return Task.FromResult<bool>(AutoFlushIfRequired(querySpaces));
+			}
+			catch (Exception ex)
+			{
+				return Task.FromException<bool>(ex);
+			}
+		}
+
 		public abstract Task FlushAsync(CancellationToken cancellationToken);
 
 		#endregion
