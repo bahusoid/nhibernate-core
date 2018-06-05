@@ -25,6 +25,11 @@ namespace NHibernate
 			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, query));
 		}
 
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IMultiAnyQueryBatch batch, IQueryable<TResult> query)
+		{
+			return new FutureEnumerable<TResult>(AddAsList(batch, query));
+		}
+
 		public static IFutureList<TResult> AddAsList<TResult>(this IMultiAnyQueryBatch batch, IQuery query)
 		{
 			return AddAsList(batch, For<TResult>(query));

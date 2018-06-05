@@ -15,8 +15,12 @@ namespace NHibernate.Linq
 {
 	public partial interface INhQueryProvider : IQueryProvider
 	{
-		//TODO: Obsolete? We don't really need ExecuteFuture, ExecuteFutureValue for unified batch
+		//Since 5.2
+		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
 		IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression);
+
+		//Since 5.2
+		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
 		IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression);
 		void SetResultTransformerAndAdditionalCriteria(IQuery query, NhLinqExpression nhExpression, IDictionary<string, Tuple<object, IType>> parameters);
 		int ExecuteDml<T>(QueryMode queryMode, Expression expression);
@@ -118,6 +122,8 @@ namespace NHibernate.Linq
 			return new NhQueryable<T>(this, expression);
 		}
 
+		//Since 5.2
+		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
 		public virtual IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
@@ -129,22 +135,17 @@ namespace NHibernate.Linq
 			return result;
 		}
 
+		//Since 5.2
+		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
 		public virtual IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
-			if (FutureSettings.IsUnifiedFuture)
-			{
-				var linqBatchItem = new MultiAnyLinqQuery<TResult>(query, nhExpression);
-				return Session.GetFutureMultiBatch().AddAsValue(linqBatchItem);
-			}
-
-			var result = query.FutureValue<TResult>();
-			if (result is IDelayedValue delayedValue)
-				SetupFutureResult(nhExpression, delayedValue);
-
-			return result;
+			var linqBatchItem = new MultiAnyLinqQuery<TResult>(query, nhExpression);
+			return Session.GetFutureMultiBatch().AddAsValue(linqBatchItem);
 		}
 
+		//Since 5.2
+		[Obsolete]
 		private static void SetupFutureResult(NhLinqExpression nhExpression, IDelayedValue result)
 		{
 			if (nhExpression.ExpressionToHqlTranslationResults.PostExecuteTransformer == null)

@@ -457,22 +457,12 @@ namespace NHibernate.Impl
 
 		public IFutureValue<T> FutureValue<T>()
 		{
-			if (FutureSettings.IsUnifiedFuture)
-			{
-				return session.GetFutureMultiBatch().AddAsValue<T>(this);
-			}
-			session.FutureCriteriaBatch.Add<T>(this);
-			return session.FutureCriteriaBatch.GetFutureValue<T>();
+			return session.GetFutureMultiBatch().AddAsValue<T>(this);
 		}
 
 		public IFutureEnumerable<T> Future<T>()
 		{
-			if (FutureSettings.IsUnifiedFuture)
-			{
-				return session.GetFutureMultiBatch().AddAsEnumerable<T>(this);
-			}
-			session.FutureCriteriaBatch.Add<T>(this);
-			return session.FutureCriteriaBatch.GetEnumerator<T>();
+			return session.GetFutureMultiBatch().AddAsEnumerable<T>(this);
 		}
 
 		public object UniqueResult()

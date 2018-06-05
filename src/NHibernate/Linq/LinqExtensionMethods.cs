@@ -2404,8 +2404,14 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureEnumerable<TSource> ToFuture<TSource>(this IQueryable<TSource> source)
 		{
+			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
+			{
+				return batchProvider.GetFutureMultiBatch().AddAsEnumerable(source);
+			}
+#pragma warning disable CS0618 // Type or member is obsolete
 			var provider = GetNhProvider(source);
 			return provider.ExecuteFuture<TSource>(source.Expression);
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 		/// <summary>
@@ -2419,14 +2425,15 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureValue<TSource> ToFutureValue<TSource>(this IQueryable<TSource> source)
 		{
-			if (FutureSettings.IsUnifiedFuture)
+			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
 			{
-				var mbProvider = GetMultiBatcNhProvider(source);
-				return mbProvider.GetFutureMultiBatch().AddAsValue(source);
+				return batchProvider.GetFutureMultiBatch().AddAsValue(source);
 			}
+#pragma warning disable CS0618, CS0612// Type or member is obsolete
 			var provider = GetNhProvider(source);
 			var future = provider.ExecuteFuture<TSource>(source.Expression);
 			return new FutureValue<TSource>(future.GetEnumerable, future.GetEnumerableAsync);
+#pragma warning restore CS0618, CS0612// Type or member is obsolete
 		}
 
 		/// <summary>
@@ -2442,16 +2449,16 @@ namespace NHibernate.Linq
 		/// <exception cref="T:System.NotSupportedException"><paramref name="source" /> <see cref="IQueryable.Provider"/> is not a <see cref="INhQueryProvider"/>.</exception>
 		public static IFutureValue<TResult> ToFutureValue<TSource, TResult>(this IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
-			if (FutureSettings.IsUnifiedFuture)
+			if (source.Provider is INhQueryProviderSupportMultiBatch batchProvider)
 			{
-				var mbProvider = GetMultiBatcNhProvider(source);
-				return mbProvider.GetFutureMultiBatch().AddAsValue(source, selector);
+				return batchProvider.GetFutureMultiBatch().AddAsValue(source, selector);
 			}
+#pragma warning disable CS0618 // Type or member is obsolete
 			var expression = ReplacingExpressionVisitor
 				.Replace(selector.Parameters.Single(), source.Expression, selector.Body);
-
 			var provider = GetNhProvider(source);
 			return provider.ExecuteFutureValue<TResult>(expression);
+#pragma warning restore CS0618 // Type or member is obsolete
 		}
 
 
@@ -2527,19 +2534,6 @@ namespace NHibernate.Linq
 			if (!(source.Provider is INhQueryProvider provider))
 			{
 				throw new NotSupportedException($"Source {nameof(source.Provider)} must be a {nameof(INhQueryProvider)}");
-			}
-			return provider;
-		}	
-		
-		internal static INhQueryProviderSupportMultiBatch GetMultiBatcNhProvider<TSource>(this IQueryable<TSource> source)
-		{
-			if (source == null)
-			{
-				throw new ArgumentNullException(nameof(source));
-			}
-			if (!(source.Provider is INhQueryProviderSupportMultiBatch provider))
-			{
-				throw new NotSupportedException($"Source {nameof(source.Provider)} must be a {nameof(INhQueryProviderSupportMultiBatch)}");
 			}
 			return provider;
 		}
