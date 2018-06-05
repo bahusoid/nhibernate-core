@@ -14,7 +14,7 @@ namespace NHibernate
 	/// <summary>
 	/// Base class for both ICriteria and IQuery queries
 	/// </summary>
-	public abstract partial class MultiAnyQueryBase<TResult> : IMultiAnyQuery, IMultiAnyQuery<TResult>
+	public abstract partial class MultiAnyQueryBase<TResult> : IMultiAnyQuery<TResult>
 	{
 		protected ISessionImplementor Session;
 		private List<object>[] _hydratedObjects;
@@ -45,9 +45,9 @@ namespace NHibernate
 			_queryInfos = GetQueryLoadInfo();
 
 			var count = _queryInfos.Count;
-			NewArray(count, out _hydratedObjects);
-			NewArray(count, out _subselectResultKeys);
-			NewArray(count, out _loaderResults);
+			_hydratedObjects = new List<object>[count];
+			_subselectResultKeys = new List<EntityKey[]>[count];
+			_loaderResults = new IList[count];
 		}
 
 		public IEnumerable<ISqlCommand> GetCommands()
@@ -100,7 +100,6 @@ namespace NHibernate
 				int maxRows = Loader.Loader.HasMaxRows(selection) ? selection.MaxRows : int.MaxValue;
 				bool advanceSelection = !dialect.SupportsLimitOffset || !loader.UseLimit(selection, dialect);
 
-				var tmpResults = new List<object>();
 				var index = i;
 				yield return reader =>
 				{
@@ -117,6 +116,7 @@ namespace NHibernate
 					LockMode[] lockModeArray = loader.GetLockModes(queryParameters.LockModes);
 					EntityKey optionalObjectKey = Loader.Loader.GetOptionalObjectKey(queryParameters, Session);
 					int rowCount = 0;
+					var tmpResults = new List<object>();
 
 					int count;
 					for (count = 0; count < maxRows && reader.Read(); count++)
@@ -143,10 +143,9 @@ namespace NHibernate
 
 						tmpResults.Add(o);
 					}
+					_loaderResults[index] = tmpResults;
 					return rowCount;
 				};
-
-				_loaderResults[index] = tmpResults;
 			}
 		}
 
@@ -208,10 +207,5 @@ namespace NHibernate
 		}
 
 		protected abstract List<TResult> DoGetResults();
-
-		private static void NewArray<T>(int count, out T[] list)
-		{
-			list = new T[count];
-		}
 	}
 }

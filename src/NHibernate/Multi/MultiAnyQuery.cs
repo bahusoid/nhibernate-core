@@ -5,7 +5,7 @@ using NHibernate.Impl;
 
 namespace NHibernate
 {
-	public partial class MultiAnyQuery<TResult> : MultiAnyQueryBase<TResult>, IMultiAnyQuery<TResult>
+	public partial class MultiAnyQuery<TResult> : MultiAnyQueryBase<TResult>
 	{
 		protected readonly AbstractQueryImpl Query;
 
