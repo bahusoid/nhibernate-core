@@ -36,9 +36,9 @@ namespace NHibernate.Engine
 				new SessionIdLoggingContext(session.SessionId);
 		}
 
-		internal static IMultiAnyQueryBatch GetFutureMultiBatch(this ISessionImplementor session)
+		internal static IQueryBatch GetFutureBatch(this ISessionImplementor session)
 		{
-			return (session as AbstractSessionImpl)?.FutureMultiBatch;
+			return (session as AbstractSessionImpl)?.FutureBatch;
 		}
 
 		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)

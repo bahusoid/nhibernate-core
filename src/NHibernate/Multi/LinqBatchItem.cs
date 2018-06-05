@@ -9,40 +9,40 @@ using Remotion.Linq.Parsing.ExpressionVisitors;
 
 namespace NHibernate
 {
-	public partial class MultiAnyLinqQuery<T> : MultiAnyQuery<T>
+	public partial class LinqBatchItem<T> : QueryBatchItem<T>
 	{
 		private static Delegate _postExecuteTransformer;
 		private static NhLinqExpression _linqEx;
 
-		public MultiAnyLinqQuery(IQueryable query) : base(GetQuery(query))
+		public LinqBatchItem(IQueryable query) : base(GetQuery(query))
 		{
 		}
 
-		public MultiAnyLinqQuery(IQuery query) : base(query)
+		public LinqBatchItem(IQuery query) : base(query)
 		{
 		}
 
-		internal MultiAnyLinqQuery(IQuery query, NhLinqExpression linq) : base(query)
+		internal LinqBatchItem(IQuery query, NhLinqExpression linq) : base(query)
 		{
 			_linqEx = linq;
 			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;
 		}
 
-		private MultiAnyLinqQuery(IQueryable query, Expression modifiedOriginalExpression) : base(GetQuery(query, modifiedOriginalExpression))
+		private LinqBatchItem(IQueryable query, Expression modifiedOriginalExpression) : base(GetQuery(query, modifiedOriginalExpression))
 		{
 		}
 
-		public static MultiAnyLinqQuery<TResult> GetForSelector<TResult>(IQueryable<T> query, Expression<Func<IQueryable<T>, TResult>> selector)
+		public static LinqBatchItem<TResult> GetForSelector<TResult>(IQueryable<T> query, Expression<Func<IQueryable<T>, TResult>> selector)
 		{
 			var expression = ReplacingExpressionVisitor
 				.Replace(selector.Parameters.Single(), query.Expression, selector.Body);
-			return new MultiAnyLinqQuery<TResult>(query, expression);
+			return new LinqBatchItem<TResult>(query, expression);
 
 		}
 
 		private static IQuery GetQuery(IQueryable query, Expression ex = null)
 		{
-			var prov = query.Provider as INhQueryProviderSupportMultiBatch;
+			var prov = query.Provider as ISupportFutureBatchNhQueryProvider;
 
 			var q = prov.GetPreparedQuery(ex ?? query.Expression, out _linqEx);
 			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;

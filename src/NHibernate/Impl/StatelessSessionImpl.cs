@@ -856,7 +856,7 @@ namespace NHibernate.Impl
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by MultiAnyQueryBatch")]
+		[Obsolete("Replaced by QueryBatch")]
 		public override FutureCriteriaBatch FutureCriteriaBatch
 		{
 			get { throw new NotSupportedException("future queries are not supported for stateless session"); }
@@ -864,7 +864,7 @@ namespace NHibernate.Impl
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by MultiAnyQueryBatch")]
+		[Obsolete("Replaced by QueryBatch")]
 		public override FutureQueryBatch FutureQueryBatch
 		{
 			get { throw new NotSupportedException("future queries are not supported for stateless session"); }

@@ -5,11 +5,11 @@ using NHibernate.Persister.Entity;
 
 namespace NHibernate
 {
-	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>
+	public partial class CriteriaBatchItem<T> : QueryBatchItemBase<T>
 	{
 		private readonly CriteriaImpl _criteria;
 
-		public MultiAnyCriteriaQuery(ICriteria criteria)
+		public CriteriaBatchItem(ICriteria criteria)
 		{
 			_criteria = (CriteriaImpl) criteria;
 		}

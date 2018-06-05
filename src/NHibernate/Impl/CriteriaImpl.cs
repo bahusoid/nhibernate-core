@@ -457,12 +457,12 @@ namespace NHibernate.Impl
 
 		public IFutureValue<T> FutureValue<T>()
 		{
-			return session.GetFutureMultiBatch().AddAsValue<T>(this);
+			return session.GetFutureBatch().AddAsValue<T>(this);
 		}
 
 		public IFutureEnumerable<T> Future<T>()
 		{
-			return session.GetFutureMultiBatch().AddAsEnumerable<T>(this);
+			return session.GetFutureBatch().AddAsEnumerable<T>(this);
 		}
 
 		public object UniqueResult()

@@ -16,11 +16,11 @@ namespace NHibernate.Linq
 	public partial interface INhQueryProvider : IQueryProvider
 	{
 		//Since 5.2
-		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
+		[Obsolete("Replaced by ISupportFutureBatchNhQueryProvider interface")]
 		IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression);
 
 		//Since 5.2
-		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
+		[Obsolete("Replaced by ISupportFutureBatchNhQueryProvider interface")]
 		IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression);
 		void SetResultTransformerAndAdditionalCriteria(IQuery query, NhLinqExpression nhExpression, IDictionary<string, Tuple<object, IType>> parameters);
 		int ExecuteDml<T>(QueryMode queryMode, Expression expression);
@@ -28,10 +28,10 @@ namespace NHibernate.Linq
 	}
 
 	// 6.0 TODO: merge into INhQueryProvider.
-	public interface INhQueryProviderSupportMultiBatch
+	public interface ISupportFutureBatchNhQueryProvider
 	{
 		IQuery GetPreparedQuery(Expression expression, out NhLinqExpression nhExpression);
-		IMultiAnyQueryBatch GetFutureMultiBatch();
+		IQueryBatch GetFutureBatch();
 	}
 
 	/// <summary>
@@ -47,7 +47,7 @@ namespace NHibernate.Linq
 		IQueryProvider WithOptions(Action<NhQueryableOptions> setOptions);
 	}
 
-	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions, INhQueryProviderSupportMultiBatch
+	public partial class DefaultQueryProvider : INhQueryProvider, IQueryProviderWithOptions, ISupportFutureBatchNhQueryProvider
 	{
 		private static readonly MethodInfo CreateQueryMethodDefinition = ReflectHelper.GetMethodDefinition((INhQueryProvider p) => p.CreateQuery<object>(null));
 
@@ -123,7 +123,7 @@ namespace NHibernate.Linq
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
+		[Obsolete("Replaced by ISupportFutureBatchNhQueryProvider interface")]
 		public virtual IFutureEnumerable<TResult> ExecuteFuture<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
@@ -136,12 +136,12 @@ namespace NHibernate.Linq
 		}
 
 		//Since 5.2
-		[Obsolete("Replaced by INhQueryProviderSupportMultiBatch interface")]
+		[Obsolete("Replaced by ISupportFutureBatchNhQueryProvider interface")]
 		public virtual IFutureValue<TResult> ExecuteFutureValue<TResult>(Expression expression)
 		{
 			var nhExpression = PrepareQuery(expression, out var query);
-			var linqBatchItem = new MultiAnyLinqQuery<TResult>(query, nhExpression);
-			return Session.GetFutureMultiBatch().AddAsValue(linqBatchItem);
+			var linqBatchItem = new LinqBatchItem<TResult>(query, nhExpression);
+			return Session.GetFutureBatch().AddAsValue(linqBatchItem);
 		}
 
 		//Since 5.2
@@ -296,9 +296,9 @@ namespace NHibernate.Linq
 			return query;
 		}
 
-		public IMultiAnyQueryBatch GetFutureMultiBatch()
+		public IQueryBatch GetFutureBatch()
 		{
-			return Session.GetFutureMultiBatch();
+			return Session.GetFutureBatch();
 		}
 	}
 }

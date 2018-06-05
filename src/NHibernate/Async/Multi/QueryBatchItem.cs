@@ -9,24 +9,24 @@
 
 
 using System.Collections.Generic;
+using System.Linq;
+using NHibernate.Engine;
 using NHibernate.Impl;
-using NHibernate.Loader.Criteria;
-using NHibernate.Persister.Entity;
 
 namespace NHibernate
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	public partial class MultiAnyCriteriaQuery<T> : MultiAnyQueryBase<T>
+	public partial class QueryBatchItem<TResult> : QueryBatchItemBase<TResult>
 	{
 
-		protected override Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
+		protected override Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			if (cancellationToken.IsCancellationRequested)
 			{
-				return Task.FromCanceled<IList<T>>(cancellationToken);
+				return Task.FromCanceled<IList<TResult>>(cancellationToken);
 			}
-			return _criteria.ListAsync<T>(cancellationToken);
+			return Query.ListAsync<TResult>(cancellationToken);
 		}
 	}
 }

@@ -5,11 +5,11 @@ using NHibernate.Impl;
 
 namespace NHibernate
 {
-	public partial class MultiAnyQuery<TResult> : MultiAnyQueryBase<TResult>
+	public partial class QueryBatchItem<TResult> : QueryBatchItemBase<TResult>
 	{
 		protected readonly AbstractQueryImpl Query;
 
-		public MultiAnyQuery(IQuery query)
+		public QueryBatchItem(IQuery query)
 		{
 			Query = (AbstractQueryImpl) query;
 		}

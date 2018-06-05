@@ -7,21 +7,21 @@ using NHibernate.SqlCommand;
 namespace NHibernate
 {
 	/// <summary>
-	/// Interface for wrapping query to be batchable by <see cref="IMultiAnyQueryBatch"/>
+	/// Interface for wrapping query to be batchable by <see cref="IQueryBatch"/>
 	/// </summary>
-	public interface IMultiAnyQuery<TResult> : IMultiAnyQuery
+	public interface IQueryBatchItem<TResult> : IQueryBatchItem
 	{
 		/// <summary>
 		/// Returns loaded typed results by query.
-		/// Must be called only after <see cref="IMultiAnyQueryBatch.Execute"/>.
+		/// Must be called only after <see cref="IQueryBatch.Execute"/>.
 		/// </summary>
 		IList<TResult> GetResults();
 	}
 
 	/// <summary>
-	/// Interface for wrapping query to be batchable by <see cref="IMultiAnyQueryBatch"/>
+	/// Interface for wrapping query to be batchable by <see cref="IQueryBatch"/>
 	/// </summary>
-	public partial interface IMultiAnyQuery
+	public partial interface IQueryBatchItem
 	{
 		/// <summary>
 		/// Method is called right before batch execution.

@@ -83,9 +83,9 @@ namespace NHibernate.Test.Futures
 				var q1 = session.QueryOver<EntityComplex>()
 								.Where(x => x.Version >= 0);
 
-				batch.Add(new MultiAnyCriteriaQuery<object>(q1.RootCriteria));
+				batch.Add(new CriteriaBatchItem<object>(q1.RootCriteria));
 
-				batch.Add(new MultiAnyLinqQuery<EntityComplex>(session.Query<EntityComplex>().Fetch(c => c.ChildrenList)));
+				batch.Add(new LinqBatchItem<EntityComplex>(session.Query<EntityComplex>().Fetch(c => c.ChildrenList)));
 				batch.Execute();
 				var parent = session.Load<EntityComplex>(_parentId);
 				Assert.That(NHibernateUtil.IsInitialized(parent), Is.True);
@@ -330,10 +330,10 @@ namespace NHibernate.Test.Futures
 			}
 		}
 
-		private static MultiAnyQueryBatch NewBatch(ISession session)
+		private static QueryBatch NewBatch(ISession session)
 		{
 			var si = session.GetSessionImplementation();
-			var batch = new MultiAnyQueryBatch(si);
+			var batch = new QueryBatch(si);
 			return batch;
 		}
 

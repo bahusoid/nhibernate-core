@@ -21,7 +21,7 @@ namespace NHibernate
 {
 	using System.Threading.Tasks;
 	using System.Threading;
-	public partial class MultiAnyLinqQuery<T> : MultiAnyQuery<T>
+	public partial class LinqBatchItem<T> : QueryBatchItem<T>
 	{
 
 		protected override async Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))

@@ -14,7 +14,7 @@ namespace NHibernate
 	/// <summary>
 	/// Base class for both ICriteria and IQuery queries
 	/// </summary>
-	public abstract partial class MultiAnyQueryBase<TResult> : IMultiAnyQuery<TResult>
+	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
 		protected ISessionImplementor Session;
 		private List<object>[] _hydratedObjects;
@@ -187,7 +187,7 @@ namespace NHibernate
 		{
 			if (_loaderResults == null)
 			{
-				throw new HibernateException("Batch wasn't executed. You must call IMultiAnyQueryBatch.Execute() before accessing results.");
+				throw new HibernateException("Batch wasn't executed. You must call IQueryBatch.Execute() before accessing results.");
 			}
 			List<T> results = new List<T>(_loaderResults.Sum(tr => tr.Count));
 			for (int i = 0; i < _queryInfos.Count; i++)
