@@ -28,6 +28,19 @@ namespace NHibernate.Engine
 {
 	using System.Threading.Tasks;
 	using System.Threading;
+	internal static partial class SessionImplementorExtensions
+	{
+
+		internal static async Task AutoFlushIfRequiredAsync(this ISessionImplementor implementor, ISet<string> querySpaces, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			var autoFlushIfRequiredTask = (implementor as AbstractSessionImpl)?.AutoFlushIfRequiredAsync(querySpaces, cancellationToken);
+			if (autoFlushIfRequiredTask != null)
+			{
+				await (autoFlushIfRequiredTask).ConfigureAwait(false);
+			}
+		}
+	}
 
 	public partial interface ISessionImplementor
 	{

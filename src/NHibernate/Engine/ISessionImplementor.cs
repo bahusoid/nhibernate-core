@@ -17,7 +17,7 @@ using NHibernate.Type;
 namespace NHibernate.Engine
 {
 	// 6.0 TODO: Convert to interface methods
-	internal static class SessionImplementorExtensions
+	internal static partial class SessionImplementorExtensions
 	{
 		internal static IDisposable BeginContext(this ISessionImplementor session)
 		{
@@ -39,6 +39,11 @@ namespace NHibernate.Engine
 		internal static IMultiAnyQueryBatch GetFutureMultiBatch(this ISessionImplementor session)
 		{
 			return (session as AbstractSessionImpl)?.FutureMultiBatch;
+		}
+
+		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
+		{
+			(implementor as AbstractSessionImpl)?.AutoFlushIfRequired(querySpaces);
 		}
 	}
 
