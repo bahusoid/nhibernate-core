@@ -120,6 +120,74 @@ namespace NHibernate.Test.Futures
 			}
 		}
 
+		//NH-3864 - Cacheable Multicriteria/Future'd query with aliased join throw exception 
+		[Test]
+		public void CacheableCriteriaWithAliasedJoinFuture()
+		{
+			using (var session = OpenSession())
+			{
+				EntitySimpleChild child1 = null;
+				var ecFuture = session.QueryOver<EntityComplex>()
+									.JoinAlias(c => c.Child1, () => child1)
+									.Where(c => c.Id == _parentId)
+									.Cacheable()
+									.FutureValue();
+				EntityComplex value = null;
+				Assert.DoesNotThrow(() => value = ecFuture.Value);
+				Assert.That(value, Is.Not.Null);
+			}
+
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				EntitySimpleChild child1 = null;
+				var ecFuture = session.QueryOver<EntityComplex>()
+									.JoinAlias(c => c.Child1, () => child1)
+									.Where(c => c.Id == _parentId)
+									.Cacheable()
+									.FutureValue();
+				EntityComplex value = null;
+				Assert.DoesNotThrow(() => value = ecFuture.Value);
+				Assert.That(value, Is.Not.Null);
+
+				Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(0), "Query is expected to be retrieved from cache");
+			}
+		}
+
+		//NH-3334 - 'collection is not associated with any session' upon refreshing objects from QueryOver<>().Future<>()
+		[Explicit]
+		[Test]
+		public void RefreshFutureWithEagerCollections()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var ecFutureList = session.QueryOver<EntityEager>().Future();
+
+				foreach(var ec in ecFutureList.GetEnumerable())
+				{
+					//trouble causes ec.ChildrenListEager with eager select mapping
+					Assert.DoesNotThrow(() => session.Refresh(ec), "session.Refresh should not throw exception");
+				}
+			}
+		}
+
+		//Related to NH-3334. Eager mappings are not fethced by Future
+		[Explicit]
+		[Test]
+		public void FutureForEagerMappedCollection()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var futureValue = session.QueryOver<EntityEager>().Where(e => e.Id == _eagerId).FutureValue();
+				Assert.That(futureValue.Value, Is.Not.Null);
+				Assert.That(NHibernateUtil.IsInitialized(futureValue.Value), Is.True);
+				Assert.That(NHibernateUtil.IsInitialized(futureValue.Value.ChildrenListEager), Is.True);
+				Assert.That(NHibernateUtil.IsInitialized(futureValue.Value.ChildrenListSubselect), Is.True);
+			}
+		}
+
 		#region Temp tests for debugging
 
 		[Test, Explicit]
@@ -185,22 +253,6 @@ namespace NHibernate.Test.Futures
 				var futureValue = b.AddAsValue(pq, c => c.SingleOrDefault());
 				var value = futureValue.Value;
 
-			}
-		}
-
-		[Test, Explicit]
-		public void TestMultiWithSubselect()
-		{
-			using (var sqlLog = new SqlLogSpy())
-			using (var session = OpenSession())
-			{
-				var batch = NewBatch(session);
-				var eagerEntity = batch.AddAsList(session.QueryOver<EntityEager>());
-
-				var list = eagerEntity.Value;
-				var eager = session.Load<EntityEager>(_eagerId);
-				Assert.That(NHibernateUtil.IsInitialized(eager), Is.True);
-				Assert.That(NHibernateUtil.IsInitialized(eager.ChildrenListSubselect), Is.True);
 			}
 		}
 
