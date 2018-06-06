@@ -6,7 +6,6 @@ using System.Linq;
 using NHibernate.Cache;
 using NHibernate.Engine;
 using NHibernate.SqlCommand;
-using NHibernate.Transform;
 using NHibernate.Util;
 
 namespace NHibernate
@@ -30,8 +29,8 @@ namespace NHibernate
 			
 			//Cache related properties:
 			public ISet<string> QuerySpaces;
-			public Action<IList> PutInCacheAction;
-			public CacheableResultTransformer CacheTransformer;
+			public IQueryCache Cache;
+			public QueryKey CacheKey;
 		}
 
 		protected abstract List<QueryLoadInfo> GetQueryLoadInfo();
@@ -52,18 +51,24 @@ namespace NHibernate
 			for (var index = 0; index < _queryInfos.Count; index++)
 			{
 				var qi = _queryInfos[index];
-				var resultsFromCache = qi.Loader.GetResultsIfCacheable(Session, qi.Parameters, out IQueryCache cache, out QueryKey key, qi.QuerySpaces, null);
-				qi.CacheTransformer = key?.ResultTransformer;
+
+				IList resultsFromCache = null;
+				qi.Loader.ProcessCachedResults(
+					Session,
+					qi.Parameters,
+					qi.QuerySpaces,
+					(cache, key, results) =>
+					{
+						qi.CacheKey = key;
+						qi.Cache = cache;
+						resultsFromCache = results;
+					});
 
 				if (resultsFromCache != null)
 				{
+					qi.Cache = null;
 					_loaderResults[index] = resultsFromCache;
 					continue;
-				}
-
-				if (cache != null)
-				{
-					qi.PutInCacheAction = (list) => qi.Loader.PutResultInQueryCache(Session, qi.Parameters, cache, key, list);
 				}
 
 				yield return qi.Loader.CreateSqlCommand(qi.Parameters, Session);
@@ -81,9 +86,9 @@ namespace NHibernate
 				var queryParameters = _queryInfos[i].Parameters;
 
 				//Skip processing for items already loaded from cache
-				if (_queryInfos[i].CacheTransformer != null && _loaderResults[i] != null)
+				if (_queryInfos[i].CacheKey?.ResultTransformer != null && _loaderResults[i] != null)
 				{
-					loader.ProcessCachedResults(queryParameters, _queryInfos[i].CacheTransformer, ref _loaderResults[i]);
+					loader.TransformCachedResults(queryParameters, _queryInfos[i].CacheKey.ResultTransformer, ref _loaderResults[i]);
 					continue;
 				}
 
@@ -130,7 +135,7 @@ namespace NHibernate
 								hydratedObjects[index],
 								keys,
 								true,
-								_queryInfos[index].CacheTransformer
+								_queryInfos[index].CacheKey?.ResultTransformer
 							);
 						if (loader.IsSubselectLoadingEnabled)
 						{
@@ -155,14 +160,17 @@ namespace NHibernate
 		{
 			for (int i = 0; i < _queryInfos.Count; i++)
 			{
-				Loader.Loader loader = _queryInfos[i].Loader;
+				var queryInfo = _queryInfos[i];
 				if (_subselectResultKeys[i] != null)
 				{
-					loader.CreateSubselects(_subselectResultKeys[i], _queryInfos[i].Parameters, Session);
+					queryInfo.Loader.CreateSubselects(_subselectResultKeys[i], queryInfo.Parameters, Session);
 				}
 
 				//Maybe put in cache...
-				_queryInfos[i].PutInCacheAction?.Invoke(_loaderResults[i]);
+				if (queryInfo.Cache != null)
+				{
+					queryInfo.Loader.PutResultInQueryCache(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i]);
+				}
 			}
 
 			OnAfterLoad?.Invoke(GetResults());

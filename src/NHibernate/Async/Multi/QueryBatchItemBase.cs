@@ -16,7 +16,6 @@ using System.Linq;
 using NHibernate.Cache;
 using NHibernate.Engine;
 using NHibernate.SqlCommand;
-using NHibernate.Transform;
 using NHibernate.Util;
 
 namespace NHibernate
@@ -25,6 +24,58 @@ namespace NHibernate
 	using System.Threading;
 	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
+
+		public async Task<IEnumerable<ISqlCommand>> GetCommandsAsync(CancellationToken cancellationToken = default(CancellationToken))
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			var yields = new List<ISqlCommand>();
+			for (var index = 0; index < _queryInfos.Count; index++)
+			{
+				var qi = _queryInfos[index];
+
+				IList resultsFromCache = null;
+				await (qi.Loader.ProcessCachedResultsAsync(
+					Session,
+					qi.Parameters,
+					qi.QuerySpaces,
+					(cache, key, results) =>
+					{
+						qi.CacheKey = key;
+						qi.Cache = cache;
+						resultsFromCache = results;
+					}, cancellationToken)).ConfigureAwait(false);
+
+				if (resultsFromCache != null)
+				{
+					qi.Cache = null;
+					_loaderResults[index] = resultsFromCache;
+					continue;
+				}
+			yields.Add(qi.Loader.CreateSqlCommand(qi.Parameters, Session));
+			}
+			return yields;
+		}
+
+		public async Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken))
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			for (int i = 0; i < _queryInfos.Count; i++)
+			{
+				var queryInfo = _queryInfos[i];
+				if (_subselectResultKeys[i] != null)
+				{
+					queryInfo.Loader.CreateSubselects(_subselectResultKeys[i], queryInfo.Parameters, Session);
+				}
+
+				//Maybe put in cache...
+				if (queryInfo.Cache != null)
+				{
+					await (queryInfo.Loader.PutResultInQueryCacheAsync(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i], cancellationToken)).ConfigureAwait(false);
+				}
+			}
+
+			OnAfterLoad?.Invoke(GetResults());
+		}
 
 		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{

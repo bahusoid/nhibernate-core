@@ -54,11 +54,21 @@ namespace NHibernate
 			}
 		}
 
+		private async Task CombineQueriesAsync(IResultSetsCommand resultSetsCommand, CancellationToken cancellationToken = default(CancellationToken))
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			foreach (var multiSource in _queries)
+			foreach (var cmd in await (multiSource.GetCommandsAsync(cancellationToken)).ConfigureAwait(false))
+			{
+				resultSetsCommand.Append(cmd);
+			}
+		}
+
 		protected async Task DoExecuteAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			var resultSetsCommand = Session.Factory.ConnectionProvider.Driver.GetResultSetsCommand(Session);
-			CombineQueries(resultSetsCommand);
+			await (CombineQueriesAsync(resultSetsCommand, cancellationToken)).ConfigureAwait(false);
 
 			var querySpaces = new HashSet<string>(_queries.SelectMany(t => t.GetQuerySpaces()));
 			if (resultSetsCommand.HasQueries)
@@ -98,7 +108,7 @@ namespace NHibernate
 
 				foreach (var multiSource in _queries)
 				{
-					multiSource.PostProcess();
+					await (multiSource.PostProcessAsync(cancellationToken)).ConfigureAwait(false);
 				}
 			}
 			catch (OperationCanceledException) { throw; }

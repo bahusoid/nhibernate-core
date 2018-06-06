@@ -1168,7 +1168,7 @@ namespace NHibernate.Loader
 		protected async Task<IList> ListAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			return ListUsingQueryCacheOrNull(session, queryParameters, querySpaces)
+			return await (ListUsingQueryCacheOrNullAsync(session, queryParameters, querySpaces, cancellationToken)).ConfigureAwait(false)
 					?? await (ListIgnoreQueryCacheAsync(session, queryParameters, cancellationToken)).ConfigureAwait(false);
 		}
 
@@ -1176,6 +1176,52 @@ namespace NHibernate.Loader
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			return GetResultList(await (DoListAsync(session, queryParameters, cancellationToken)).ConfigureAwait(false), queryParameters.ResultTransformer);
+		}
+
+		internal async Task ProcessCachedResultsAsync(
+			ISessionImplementor session,
+			QueryParameters queryParameters,
+			ISet<string> querySpaces,
+			Action<IQueryCache, QueryKey, IList> cacheProcessingLogic, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			bool cacheable = _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable;
+
+			if (!cacheable)
+				return;
+
+			var queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
+			var key = GenerateQueryKey(session, queryParameters);
+
+			IList result = await (GetResultFromQueryCacheAsync(session, queryParameters, querySpaces, queryCache, key, cancellationToken)).ConfigureAwait(false);
+			cacheProcessingLogic(queryCache, key, result);
+		}
+
+		private async Task<IList> ListUsingQueryCacheOrNullAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			IList cachedResults = null;
+			await (ProcessCachedResultsAsync(
+				session,
+				queryParameters,
+				querySpaces,
+				(queryCache, cacheKey, results) =>
+				{
+					if (results == null)
+					{
+						results = DoList(session, queryParameters, cacheKey.ResultTransformer);
+						PutResultInQueryCache(session, queryParameters, queryCache, cacheKey, results);
+					}
+
+					TransformCachedResults(queryParameters, cacheKey.ResultTransformer, ref results);
+					cachedResults = results;
+				}, cancellationToken)).ConfigureAwait(false);
+
+			//means cache is disabled
+			if (cachedResults == null)
+				return null;
+
+			return GetResultList(cachedResults, queryParameters.ResultTransformer);
 		}
 
 		private async Task<IList> GetResultFromQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters,

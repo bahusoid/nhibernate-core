@@ -1647,55 +1647,51 @@ namespace NHibernate.Loader
 			return GetResultList(DoList(session, queryParameters), queryParameters.ResultTransformer);
 		}
 
-		protected internal IList GetResultsIfCacheable(
+		internal void ProcessCachedResults(
 			ISessionImplementor session,
 			QueryParameters queryParameters,
-			out IQueryCache queryCache,
-			out QueryKey key,
 			ISet<string> querySpaces,
-			Func<IResultTransformer, IList> loadListFunc)
+			Action<IQueryCache, QueryKey, IList> cacheProcessingLogic)
 		{
-			queryCache = null;
-			key = null;
 			bool cacheable = _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable;
 
 			if (!cacheable)
-				return null;
+				return;
 
-			queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
-
-			key = GenerateQueryKey(session, queryParameters);
+			var queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
+			var key = GenerateQueryKey(session, queryParameters);
 
 			IList result = GetResultFromQueryCache(session, queryParameters, querySpaces, queryCache, key);
-			if (result == null && loadListFunc != null)
-			{
-				result = loadListFunc(key.ResultTransformer);
-				PutResultInQueryCache(session, queryParameters, queryCache, key, result);
-			}
-
-			return result;
+			cacheProcessingLogic(queryCache, key, result);
 		}
-		
+
 		private IList ListUsingQueryCacheOrNull(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces)
 		{
-			var cachedResults = GetResultsIfCacheable(
+			IList cachedResults = null;
+			ProcessCachedResults(
 				session,
 				queryParameters,
-				out _,
-				out var key,
 				querySpaces,
-				t => DoList(session, queryParameters, t));
+				(queryCache, cacheKey, results) =>
+				{
+					if (results == null)
+					{
+						results = DoList(session, queryParameters, cacheKey.ResultTransformer);
+						PutResultInQueryCache(session, queryParameters, queryCache, cacheKey, results);
+					}
+
+					TransformCachedResults(queryParameters, cacheKey.ResultTransformer, ref results);
+					cachedResults = results;
+				});
 
 			//means cache is disabled
 			if (cachedResults == null)
 				return null;
 
-			ProcessCachedResults(queryParameters, key.ResultTransformer, ref cachedResults);
-
 			return GetResultList(cachedResults, queryParameters.ResultTransformer);
 		}
 
-		internal void ProcessCachedResults(QueryParameters queryParameters, CacheableResultTransformer transformer, ref IList result)
+		internal void TransformCachedResults(QueryParameters queryParameters, CacheableResultTransformer transformer, ref IList result)
 		{
 			IResultTransformer resolvedTransformer = ResolveResultTransformer(queryParameters.ResultTransformer);
 			if (resolvedTransformer != null)
