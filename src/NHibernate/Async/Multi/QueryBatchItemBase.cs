@@ -26,29 +26,6 @@ namespace NHibernate
 	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
 
-		public async Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken))
-		{
-			cancellationToken.ThrowIfCancellationRequested();
-			if (_reader == null)
-				return;
-
-			for (int i = 0; i < _queryInfos.Count; i++)
-			{
-				Loader.Loader loader = _queryInfos[i].Loader;
-				await (loader.InitializeEntitiesAndCollectionsAsync(
-					_hydratedObjects[i], _reader, Session, Session.PersistenceContext.DefaultReadOnly, cancellationToken)).ConfigureAwait(false);
-
-				if (_subselectResultKeys[i] != null)
-				{
-					loader.CreateSubselects(_subselectResultKeys[i], _queryInfos[i].Parameters, Session);
-				}
-
-				//Maybe put in cache...
-				_queryInfos[i].PutInCacheAction?.Invoke(_loaderResults[i]);
-			}
-			_reader = null;
-		}
-
 		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken = default(CancellationToken))
 		{
 			cancellationToken.ThrowIfCancellationRequested();

@@ -95,6 +95,31 @@ namespace NHibernate.Test.Futures
 			}
 		}
 
+		//NH-3350 (Duplicate records using Future())
+		[Test]
+		public void SameCollectionFetches()
+		{
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var entiyComplex = session.QueryOver<EntityComplex>().Where(c => c.Id == _parentId).FutureValue();
+
+				session.QueryOver<EntityComplex>()
+						.Fetch(SelectMode.Fetch, ec => ec.ChildrenList)
+						.Where(c => c.Id == _parentId).Future();
+
+				session.QueryOver<EntityComplex>()
+						.Fetch(SelectMode.Fetch, ec => ec.ChildrenList)
+						.Where(c => c.Id == _parentId).Future();
+
+				var parent = entiyComplex.Value;
+				Assert.That(NHibernateUtil.IsInitialized(parent), Is.True);
+				Assert.That(NHibernateUtil.IsInitialized(parent.ChildrenList), Is.True);
+				Assert.That(parent.ChildrenList.Count, Is.EqualTo(2));
+				
+			}
+		}
+
 		#region Temp tests for debugging
 
 		[Test, Explicit]

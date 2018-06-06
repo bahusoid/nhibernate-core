@@ -17,12 +17,10 @@ namespace NHibernate
 	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
 		protected ISessionImplementor Session;
-		private List<object>[] _hydratedObjects;
 		private List<EntityKey[]>[] _subselectResultKeys;
 		private IList[] _loaderResults;
 
 		private List<QueryLoadInfo> _queryInfos;
-		private DbDataReader _reader;
 		private IList<TResult> _finalResults;
 
 		protected class QueryLoadInfo
@@ -45,7 +43,6 @@ namespace NHibernate
 			_queryInfos = GetQueryLoadInfo();
 
 			var count = _queryInfos.Count;
-			_hydratedObjects = new List<object>[count];
 			_subselectResultKeys = new List<EntityKey[]>[count];
 			_loaderResults = new IList[count];
 		}
@@ -76,6 +73,7 @@ namespace NHibernate
 		public IEnumerable<Func<DbDataReader, int>> GetProcessResultSetActions()
 		{
 			var dialect = Session.Factory.Dialect;
+			List<object>[] hydratedObjects = new List<object>[_queryInfos.Count];
 
 			for (var i = 0; i < _queryInfos.Count; i++)
 			{
@@ -90,7 +88,7 @@ namespace NHibernate
 				}
 
 				int entitySpan = loader.EntityPersisters.Length;
-				_hydratedObjects[i] = entitySpan == 0 ? null : new List<object>(entitySpan);
+				hydratedObjects[i] = entitySpan == 0 ? null : new List<object>(entitySpan);
 				EntityKey[] keys = new EntityKey[entitySpan];
 
 				RowSelection selection = queryParameters.RowSelection;
@@ -103,7 +101,6 @@ namespace NHibernate
 				var index = i;
 				yield return reader =>
 				{
-					_reader = reader;
 					if (advanceSelection)
 					{
 						Loader.Loader.Advance(reader, selection);
@@ -130,7 +127,7 @@ namespace NHibernate
 								queryParameters,
 								lockModeArray,
 								optionalObjectKey,
-								_hydratedObjects[index],
+								hydratedObjects[index],
 								keys,
 								true,
 								_queryInfos[index].CacheTransformer
@@ -144,6 +141,11 @@ namespace NHibernate
 						tmpResults.Add(o);
 					}
 					_loaderResults[index] = tmpResults;
+
+					if (index == _queryInfos.Count - 1)
+					{
+						InitializeEntitiesAndCollections(reader, hydratedObjects);
+					}
 					return rowCount;
 				};
 			}
@@ -151,15 +153,9 @@ namespace NHibernate
 
 		public void PostProcess()
 		{
-			if (_reader == null)
-				return;
-
 			for (int i = 0; i < _queryInfos.Count; i++)
 			{
 				Loader.Loader loader = _queryInfos[i].Loader;
-				loader.InitializeEntitiesAndCollections(
-					_hydratedObjects[i], _reader, Session, Session.PersistenceContext.DefaultReadOnly);
-
 				if (_subselectResultKeys[i] != null)
 				{
 					loader.CreateSubselects(_subselectResultKeys[i], _queryInfos[i].Parameters, Session);
@@ -168,7 +164,6 @@ namespace NHibernate
 				//Maybe put in cache...
 				_queryInfos[i].PutInCacheAction?.Invoke(_loaderResults[i]);
 			}
-			_reader = null;
 		}
 
 		public void ExecuteNonBatchable()
@@ -207,5 +202,14 @@ namespace NHibernate
 		}
 
 		protected abstract List<TResult> DoGetResults();
+
+		private void InitializeEntitiesAndCollections(DbDataReader reader, List<object>[] hydratedObjects)
+		{
+			for (int i = 0; i < _queryInfos.Count; i++)
+			{
+				_queryInfos[i].Loader.InitializeEntitiesAndCollections(
+									hydratedObjects[i], reader, Session, Session.PersistenceContext.DefaultReadOnly);
+			}
+		}
 	}
 }
