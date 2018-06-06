@@ -10,22 +10,32 @@ namespace NHibernate
 {
 	public static partial class FutureExtensions
 	{
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver queryOver)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver query)
 		{
-			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, queryOver));
+			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, ICriteria criteria)
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
 		{
-			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, criteria));
+			return AddAsEnumerable(batch, For<TResult>(query));
+		}
+
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, ICriteria query)
+		{
+			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
 		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQuery query)
 		{
-			return new FutureEnumerable<TResult>(AddAsList<TResult>(batch, query));
+			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
 		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
+		{
+			return AddAsEnumerable(batch, For<TResult>(query));
+		}
+
+		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
 			return new FutureEnumerable<TResult>(AddAsList(batch, query));
 		}
@@ -62,7 +72,7 @@ namespace NHibernate
 
 		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
-			batch.Add((IQueryBatchItem) query);
+			batch.Add(query);
 			return new FutureList<TResult>(batch, query);
 		}
 
@@ -77,6 +87,16 @@ namespace NHibernate
 		}
 
 		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, ICriteria query)
+		{
+			return AddAsValue(batch, For<TResult>(query));
+		}
+
+		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryOver query)
+		{
+			return AddAsValue(batch, For<TResult>(query));
+		}
+
+		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
 		{
 			return AddAsValue(batch, For<TResult>(query));
 		}
