@@ -95,6 +95,32 @@ namespace NHibernate.Test.Futures
 			}
 		}
 
+		[Test]
+		public void OnAfterLoad()
+		{
+			using (var session = OpenSession())
+			{
+				var batch = NewBatch(session);
+				IList<EntityComplex> results = null;
+				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
+				batch.Execute();
+
+				Assert.That(results, Is.Not.Null);
+			}
+
+			using (var sqlLog = new SqlLogSpy())
+			using (var session = OpenSession())
+			{
+				var batch = NewBatch(session);
+				IList<EntityComplex> results = null;
+				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
+				batch.Execute();
+
+				Assert.That(results, Is.Not.Null);
+				Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(0), "Query is expected to be retrieved from cache");
+			}
+		}
+
 		//NH-3350 (Duplicate records using Future())
 		[Test]
 		public void SameCollectionFetches()

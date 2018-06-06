@@ -92,6 +92,37 @@ namespace NHibernate
 			return new FutureValue<TResult>(batch, query);
 		}
 
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryable<TResult> query, Action<IList<TResult>> processResults)
+		{
+			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+		}
+
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, ICriteria query, Action<IList<TResult>> processResults)
+		{
+			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+		}
+
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryOver<TResult> query, Action<IList<TResult>> processResults)
+		{
+			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+		}
+
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryOver query, Action<IList<TResult>> processResults)
+		{
+			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+		}
+
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQuery query, Action<IList<TResult>> processResults)
+		{
+			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+		}
+
+		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query, Action<IList<TResult>> processResults)
+		{
+			query.OnAfterLoad += processResults;
+			batch.Add(query);
+		}
+
 		private static LinqBatchItem<TResult> For<TResult>(IQueryable<TResult> source)
 		{
 			return new LinqBatchItem<TResult>(source);

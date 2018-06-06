@@ -30,6 +30,7 @@ namespace NHibernate
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			_finalResults = await (ExecuteQueryNowAsync(cancellationToken)).ConfigureAwait(false);
+			OnAfterLoad?.Invoke(_finalResults);
 		}
 
 		protected abstract Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken));
