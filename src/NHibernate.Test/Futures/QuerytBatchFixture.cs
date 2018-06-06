@@ -12,7 +12,7 @@ using NHibernate.Criterion;
 namespace NHibernate.Test.Futures
 {
 	[TestFixture]
-	public class MultiAnyQuerytBatchFixture : TestCaseMappingByCode
+	public class QuerytBatchFixture : TestCaseMappingByCode
 	{
 		private Guid _parentId;
 		private Guid _eagerId;

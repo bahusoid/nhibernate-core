@@ -23,7 +23,7 @@ namespace NHibernate.Test.Futures
 {
 	using System.Threading.Tasks;
 	[TestFixture]
-	public class MultiAnyQuerytBatchFixtureAsync : TestCaseMappingByCode
+	public class QuerytBatchFixtureAsync : TestCaseMappingByCode
 	{
 		private Guid _parentId;
 		private Guid _eagerId;
