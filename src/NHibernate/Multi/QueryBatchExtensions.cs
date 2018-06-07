@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace NHibernate
 {
-	public static partial class FutureExtensions
+	public static partial class QueryBatchExtensions
 	{
 		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver query)
 		{

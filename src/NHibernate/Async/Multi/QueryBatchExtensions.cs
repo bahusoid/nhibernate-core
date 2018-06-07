@@ -18,7 +18,7 @@ using System.Threading.Tasks;
 
 namespace NHibernate
 {
-	public static partial class FutureExtensions
+	public static partial class QueryBatchExtensions
 	{
 
 		#region Helper classes

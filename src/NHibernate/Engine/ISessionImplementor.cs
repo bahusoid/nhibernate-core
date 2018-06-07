@@ -47,6 +47,11 @@ namespace NHibernate.Engine
 		{
 			(implementor as AbstractSessionImpl)?.AutoFlushIfRequired(querySpaces);
 		}
+
+		public static IQueryBatch CreateQueryBatch(this ISessionImplementor implementor)
+		{
+			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(implementor, "query batch").CreateQueryBatch();
+		}
 	}
 
 	/// <summary>

@@ -290,7 +290,7 @@ namespace NHibernate.Impl
 	
 		public virtual IQueryBatch FutureBatch
 		{
-			get => _futureMultiBatch ?? (_futureMultiBatch = new QueryBatch(this));
+			get => _futureMultiBatch ?? (_futureMultiBatch = CreateQueryBatch());
 		}
 
 		public virtual IInterceptor Interceptor { get; protected set; }
@@ -641,6 +641,11 @@ namespace NHibernate.Impl
 		public IQueryable<T> Query<T>(string entityName)
 		{
 			return new NhQueryable<T>(this, entityName);
+		}
+
+		public virtual IQueryBatch CreateQueryBatch()
+		{
+			return new QueryBatch(this);
 		}
 	}
 }
