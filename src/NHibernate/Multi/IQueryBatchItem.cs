@@ -49,7 +49,7 @@ namespace NHibernate
 		IEnumerable<Func<DbDataReader, int>> GetProcessResultSetActions();
 
 		/// <summary>
-		/// Executed after all commands are processed
+		/// Executed after all commands in batch are processed
 		/// </summary>
 		void PostProcess();
 
