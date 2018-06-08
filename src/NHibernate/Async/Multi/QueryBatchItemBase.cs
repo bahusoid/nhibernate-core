@@ -18,14 +18,14 @@ using NHibernate.Engine;
 using NHibernate.SqlCommand;
 using NHibernate.Util;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	using System.Threading.Tasks;
 	using System.Threading;
 	public abstract partial class QueryBatchItemBase<TResult> : IQueryBatchItem<TResult>
 	{
 
-		public async Task<IEnumerable<ISqlCommand>> GetCommandsAsync(CancellationToken cancellationToken = default(CancellationToken))
+		public async Task<IEnumerable<ISqlCommand>> GetCommandsAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			var yields = new List<ISqlCommand>();
@@ -56,7 +56,7 @@ namespace NHibernate
 			return yields;
 		}
 
-		public async Task PostProcessAsync(CancellationToken cancellationToken = default(CancellationToken))
+		public async Task PostProcessAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			for (int i = 0; i < _queryInfos.Count; i++)
@@ -77,13 +77,13 @@ namespace NHibernate
 			OnAfterLoad?.Invoke(GetResults());
 		}
 
-		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken = default(CancellationToken))
+		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			_finalResults = await (ExecuteQueryNowAsync(cancellationToken)).ConfigureAwait(false);
 			OnAfterLoad?.Invoke(_finalResults);
 		}
 
-		protected abstract Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken));
+		protected abstract Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken);
 	}
 }

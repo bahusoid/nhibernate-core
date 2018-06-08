@@ -1,9 +1,10 @@
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NHibernate.Engine;
 using NHibernate.Impl;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	public partial class QueryBatchItem<TResult> : QueryBatchItemBase<TResult>
 	{
@@ -11,7 +12,7 @@ namespace NHibernate
 
 		public QueryBatchItem(IQuery query)
 		{
-			Query = (AbstractQueryImpl) query;
+			Query = (AbstractQueryImpl) query ?? throw new ArgumentNullException(nameof(query));
 		}
 
 		protected override List<QueryLoadInfo> GetQueryLoadInfo()

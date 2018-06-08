@@ -15,8 +15,9 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using NHibernate.Engine;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	public static partial class QueryBatchExtensions
 	{

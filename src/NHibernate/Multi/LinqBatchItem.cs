@@ -7,16 +7,11 @@ using NHibernate.Linq;
 using NHibernate.Util;
 using Remotion.Linq.Parsing.ExpressionVisitors;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	public partial class LinqBatchItem<T> : QueryBatchItem<T>
 	{
-		private static Delegate _postExecuteTransformer;
-		private static NhLinqExpression _linqEx;
-
-		public LinqBatchItem(IQueryable query) : base(GetQuery(query))
-		{
-		}
+		private readonly Delegate _postExecuteTransformer;
 
 		public LinqBatchItem(IQuery query) : base(query)
 		{
@@ -24,29 +19,33 @@ namespace NHibernate
 
 		internal LinqBatchItem(IQuery query, NhLinqExpression linq) : base(query)
 		{
-			_linqEx = linq;
-			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;
-		}
-
-		private LinqBatchItem(IQueryable query, Expression modifiedOriginalExpression) : base(GetQuery(query, modifiedOriginalExpression))
-		{
+			_postExecuteTransformer = linq.ExpressionToHqlTranslationResults.PostExecuteTransformer;
 		}
 
 		public static LinqBatchItem<TResult> GetForSelector<TResult>(IQueryable<T> query, Expression<Func<IQueryable<T>, TResult>> selector)
 		{
+			if (query == null)
+				throw new ArgumentNullException(nameof(query));
+			if (selector == null)
+				throw new ArgumentNullException(nameof(selector));
 			var expression = ReplacingExpressionVisitor
 				.Replace(selector.Parameters.Single(), query.Expression, selector.Body);
-			return new LinqBatchItem<TResult>(query, expression);
-
+			return GetForQuery<TResult>(query, expression);
 		}
 
-		private static IQuery GetQuery(IQueryable query, Expression ex = null)
+		public static LinqBatchItem<TResult> GetForQuery<TResult>(IQueryable<T> query)
 		{
-			var prov = query.Provider as ISupportFutureBatchNhQueryProvider;
+			return GetForQuery<TResult>(query, null);
+		}
 
-			var q = prov.GetPreparedQuery(ex ?? query.Expression, out _linqEx);
-			_postExecuteTransformer = _linqEx.ExpressionToHqlTranslationResults.PostExecuteTransformer;
-			return q;
+		private static LinqBatchItem<TResult> GetForQuery<TResult>(IQueryable query, Expression ex = null)
+		{
+			if (query == null)
+				throw new ArgumentNullException(nameof(query));
+			var prov = (ISupportFutureBatchNhQueryProvider)query.Provider;
+
+			var q = prov.GetPreparedQuery(ex ?? query.Expression, out var linqEx);
+			return new LinqBatchItem<TResult>(q, linqEx);
 		}
 
 		protected override IList<T> ExecuteQueryNow()
@@ -75,7 +74,7 @@ namespace NHibernate
 			return base.DoGetResults();
 		}
 
-		private static List<T> GetTransformedResults(IList transformerList)
+		private List<T> GetTransformedResults(IList transformerList)
 		{
 			var res = _postExecuteTransformer.DynamicInvoke(transformerList.AsQueryable());
 			return new List<T>

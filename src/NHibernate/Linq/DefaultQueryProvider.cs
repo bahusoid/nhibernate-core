@@ -10,6 +10,7 @@ using NHibernate.Impl;
 using NHibernate.Type;
 using NHibernate.Util;
 using System.Threading.Tasks;
+using NHibernate.Multi;
 
 namespace NHibernate.Linq
 {

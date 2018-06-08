@@ -15,13 +15,14 @@ using System.Linq;
 using NHibernate.Cfg.MappingSchema;
 using NHibernate.Linq;
 using NHibernate.Mapping.ByCode;
+using NHibernate.Multi;
 using NHibernate.Transform;
 using NUnit.Framework;
-using NHibernate.Criterion;
 
 namespace NHibernate.Test.Futures
 {
 	using System.Threading.Tasks;
+	using System.Threading;
 	[TestFixture]
 	public class QueryBatchFixtureAsync : TestCaseMappingByCode
 	{
@@ -60,23 +61,24 @@ namespace NHibernate.Test.Futures
 		{
 			using (var session = OpenSession())
 			{
-				var batch = NewBatch(session);
+				var batch = session
+					.CreateQueryBatch()
 
-				var futureBatch1 =
-					batch.AddAsList<int>(
-					session.QueryOver<EntityComplex>()
+					.Add<int>(
+						session
+							.QueryOver<EntityComplex>()
 							.Where(x => x.Version >= 0)
-							.TransformUsing(new ListTransformerToInt()));
+							.TransformUsing(new ListTransformerToInt()))
 
-				var futureEntComplList = batch.AddAsList(session.QueryOver<EntityComplex>().Where(x => x.Version >= 1));
+					.Add("queryOver", session.QueryOver<EntityComplex>().Where(x => x.Version >= 1))
 
-				var futureList3 = batch.AddAsList(session.Query<EntityComplex>().Where(ec => ec.Version > 2));
+					.Add(session.Query<EntityComplex>().Where(ec => ec.Version > 2));
 
 				using (var sqlLog = new SqlLogSpy())
 				{
-					IList<int> list1 = await (futureBatch1.GetValueAsync());
-					IList<EntityComplex> list2 = await (futureEntComplList.GetValueAsync());
-					IList<EntityComplex> list3 = await (futureList3.GetValueAsync());
+					await (batch.GetResultAsync<int>(0, CancellationToken.None));
+					await (batch.GetResultAsync<EntityComplex>("queryOver", CancellationToken.None));
+					await (batch.GetResultAsync<EntityComplex>(2, CancellationToken.None));
 					if (SupportsMultipleQueries)
 						Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1));
 				}
@@ -89,46 +91,20 @@ namespace NHibernate.Test.Futures
 			using (var sqlLog = new SqlLogSpy())
 			using (var session = OpenSession())
 			{
-				var batch = NewBatch(session);
+				var batch = session.CreateQueryBatch();
 
 				var q1 = session.QueryOver<EntityComplex>()
 								.Where(x => x.Version >= 0);
 
-				batch.Add(new CriteriaBatchItem<object>(q1.RootCriteria));
+				batch.Add(q1);
+				batch.Add(session.Query<EntityComplex>().Fetch(c => c.ChildrenList));
+				await (batch.ExecuteAsync(CancellationToken.None));
 
-				batch.Add(new LinqBatchItem<EntityComplex>(session.Query<EntityComplex>().Fetch(c => c.ChildrenList)));
-				await (batch.ExecuteAsync());
 				var parent = await (session.LoadAsync<EntityComplex>(_parentId));
 				Assert.That(NHibernateUtil.IsInitialized(parent), Is.True);
 				Assert.That(NHibernateUtil.IsInitialized(parent.ChildrenList), Is.True);
 				if (SupportsMultipleQueries)
 					Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1));
-			}
-		}
-
-		[Test]
-		public async Task OnAfterLoadAsync()
-		{
-			using (var session = OpenSession())
-			{
-				var batch = NewBatch(session);
-				IList<EntityComplex> results = null;
-				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
-				await (batch.ExecuteAsync());
-
-				Assert.That(results, Is.Not.Null);
-			}
-
-			using (var sqlLog = new SqlLogSpy())
-			using (var session = OpenSession())
-			{
-				var batch = NewBatch(session);
-				IList<EntityComplex> results = null;
-				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
-				await (batch.ExecuteAsync());
-
-				Assert.That(results, Is.Not.Null);
-				Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(0), "Query is expected to be retrieved from cache");
 			}
 		}
 
@@ -371,13 +347,6 @@ namespace NHibernate.Test.Futures
 				_parentId = complex.Id;
 				_eagerId = eager.Id;
 			}
-		}
-
-		private static QueryBatch NewBatch(ISession session)
-		{
-			var si = session.GetSessionImplementation();
-			var batch = new QueryBatch(si);
-			return batch;
 		}
 
 		public class ListTransformerToInt : IResultTransformer

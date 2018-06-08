@@ -5,9 +5,9 @@ using System.Linq;
 using NHibernate.Cfg.MappingSchema;
 using NHibernate.Linq;
 using NHibernate.Mapping.ByCode;
+using NHibernate.Multi;
 using NHibernate.Transform;
 using NUnit.Framework;
-using NHibernate.Criterion;
 
 namespace NHibernate.Test.Futures
 {
@@ -49,23 +49,24 @@ namespace NHibernate.Test.Futures
 		{
 			using (var session = OpenSession())
 			{
-				var batch = NewBatch(session);
+				var batch = session
+					.CreateQueryBatch()
 
-				var futureBatch1 =
-					batch.AddAsList<int>(
-					session.QueryOver<EntityComplex>()
+					.Add<int>(
+						session
+							.QueryOver<EntityComplex>()
 							.Where(x => x.Version >= 0)
-							.TransformUsing(new ListTransformerToInt()));
+							.TransformUsing(new ListTransformerToInt()))
 
-				var futureEntComplList = batch.AddAsList(session.QueryOver<EntityComplex>().Where(x => x.Version >= 1));
+					.Add("queryOver", session.QueryOver<EntityComplex>().Where(x => x.Version >= 1))
 
-				var futureList3 = batch.AddAsList(session.Query<EntityComplex>().Where(ec => ec.Version > 2));
+					.Add(session.Query<EntityComplex>().Where(ec => ec.Version > 2));
 
 				using (var sqlLog = new SqlLogSpy())
 				{
-					IList<int> list1 = futureBatch1.Value;
-					IList<EntityComplex> list2 = futureEntComplList.Value;
-					IList<EntityComplex> list3 = futureList3.Value;
+					batch.GetResult<int>(0);
+					batch.GetResult<EntityComplex>("queryOver");
+					batch.GetResult<EntityComplex>(2);
 					if (SupportsMultipleQueries)
 						Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1));
 				}
@@ -78,46 +79,20 @@ namespace NHibernate.Test.Futures
 			using (var sqlLog = new SqlLogSpy())
 			using (var session = OpenSession())
 			{
-				var batch = NewBatch(session);
+				var batch = session.CreateQueryBatch();
 
 				var q1 = session.QueryOver<EntityComplex>()
 								.Where(x => x.Version >= 0);
 
-				batch.Add(new CriteriaBatchItem<object>(q1.RootCriteria));
-
-				batch.Add(new LinqBatchItem<EntityComplex>(session.Query<EntityComplex>().Fetch(c => c.ChildrenList)));
+				batch.Add(q1);
+				batch.Add(session.Query<EntityComplex>().Fetch(c => c.ChildrenList));
 				batch.Execute();
+
 				var parent = session.Load<EntityComplex>(_parentId);
 				Assert.That(NHibernateUtil.IsInitialized(parent), Is.True);
 				Assert.That(NHibernateUtil.IsInitialized(parent.ChildrenList), Is.True);
 				if (SupportsMultipleQueries)
 					Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(1));
-			}
-		}
-
-		[Test]
-		public void OnAfterLoad()
-		{
-			using (var session = OpenSession())
-			{
-				var batch = NewBatch(session);
-				IList<EntityComplex> results = null;
-				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
-				batch.Execute();
-
-				Assert.That(results, Is.Not.Null);
-			}
-
-			using (var sqlLog = new SqlLogSpy())
-			using (var session = OpenSession())
-			{
-				var batch = NewBatch(session);
-				IList<EntityComplex> results = null;
-				batch.AddOnAfterLoad(session.Query<EntityComplex>().WithOptions(o => o.SetCacheable(true)), list => results = list);
-				batch.Execute();
-
-				Assert.That(results, Is.Not.Null);
-				Assert.That(sqlLog.Appender.GetEvents().Length, Is.EqualTo(0), "Query is expected to be retrieved from cache");
 			}
 		}
 
@@ -360,13 +335,6 @@ namespace NHibernate.Test.Futures
 				_parentId = complex.Id;
 				_eagerId = eager.Id;
 			}
-		}
-
-		private static QueryBatch NewBatch(ISession session)
-		{
-			var si = session.GetSessionImplementation();
-			var batch = new QueryBatch(si);
-			return batch;
 		}
 
 		public class ListTransformerToInt : IResultTransformer

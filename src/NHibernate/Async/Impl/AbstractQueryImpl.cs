@@ -14,6 +14,7 @@ using System.Collections.Generic;
 using NHibernate.Engine;
 using NHibernate.Engine.Query;
 using NHibernate.Hql;
+using NHibernate.Multi;
 using NHibernate.Proxy;
 using NHibernate.Transform;
 using NHibernate.Type;

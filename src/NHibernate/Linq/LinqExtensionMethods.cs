@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Linq.Expressions;
 using NHibernate.Impl;
+using NHibernate.Multi;
 using NHibernate.Type;
 using NHibernate.Util;
 using Remotion.Linq.Parsing.ExpressionVisitors;

@@ -17,14 +17,14 @@ using NHibernate.Linq;
 using NHibernate.Util;
 using Remotion.Linq.Parsing.ExpressionVisitors;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	using System.Threading.Tasks;
 	using System.Threading;
 	public partial class LinqBatchItem<T> : QueryBatchItem<T>
 	{
 
-		protected override async Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
+		protected override async Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			if (_postExecuteTransformer == null)

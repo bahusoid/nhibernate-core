@@ -15,9 +15,8 @@ using System.Linq;
 using NHibernate.Driver;
 using NHibernate.Engine;
 using NHibernate.Exceptions;
-using NHibernate.Impl;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	using System.Threading.Tasks;
 	using System.Threading;
@@ -25,11 +24,14 @@ namespace NHibernate
 	{
 
 		/// <inheritdoc />
-		public async Task ExecuteAsync(CancellationToken cancellationToken = default(CancellationToken))
+		public async Task ExecuteAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			if (_queries.Count == 0)
+			if (_executed || _queries.Count == 0)
 				return;
+			var sessionFlushMode = Session.FlushMode;
+			if (FlushMode.HasValue)
+				Session.FlushMode = FlushMode.Value;
 			try
 			{
 				Init();
@@ -50,11 +52,36 @@ namespace NHibernate
 			}
 			finally
 			{
-				_queries.Clear();
+				if (_autoReset)
+				{
+					_queries.Clear();
+					_queriesByKey.Clear();
+				}
+				else
+					_executed = true;
+
+				if (FlushMode.HasValue)
+					Session.FlushMode = sessionFlushMode;
 			}
 		}
 
-		private async Task CombineQueriesAsync(IResultSetsCommand resultSetsCommand, CancellationToken cancellationToken = default(CancellationToken))
+		/// <inheritdoc />
+		public async Task<IList<TResult>> GetResultAsync<TResult>(int queryIndex, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			await (ExecuteAsync(cancellationToken)).ConfigureAwait(false);
+			return ((IQueryBatchItem<TResult>) _queries[queryIndex]).GetResults();
+		}
+
+		/// <inheritdoc />
+		public async Task<IList<TResult>> GetResultAsync<TResult>(string querykey, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			await (ExecuteAsync(cancellationToken)).ConfigureAwait(false);
+			return ((IQueryBatchItem<TResult>) _queriesByKey[querykey]).GetResults();
+		}
+
+		private async Task CombineQueriesAsync(IResultSetsCommand resultSetsCommand, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			foreach (var multiSource in _queries)
@@ -64,7 +91,7 @@ namespace NHibernate
 			}
 		}
 
-		protected async Task DoExecuteAsync(CancellationToken cancellationToken = default(CancellationToken))
+		protected async Task DoExecuteAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			var resultSetsCommand = Session.Factory.ConnectionProvider.Driver.GetResultSetsCommand(Session);

@@ -5,38 +5,41 @@ using System.Linq;
 using NHibernate.Driver;
 using NHibernate.Engine;
 using NHibernate.Exceptions;
-using NHibernate.Impl;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
-	/// <summary>
-	/// Universal query batcher
-	/// </summary>
+	/// <inheritdoc />
 	public partial class QueryBatch : IQueryBatch
 	{
 		private static readonly INHibernateLogger Log = NHibernateLogger.For(typeof(QueryBatch));
 
-		private readonly ISessionImplementor _session;
-		List<IQueryBatchItem> _queries = new List<IQueryBatchItem>();
+		private readonly bool _autoReset;
+		private readonly List<IQueryBatchItem> _queries = new List<IQueryBatchItem>();
+		private readonly Dictionary<string, IQueryBatchItem> _queriesByKey = new Dictionary<string, IQueryBatchItem>();
+		private bool _executed;
 
-		public QueryBatch(ISessionImplementor session)
+		public QueryBatch(ISessionImplementor session, bool autoReset)
 		{
-			_session = session;
+			Session = session;
+			_autoReset = autoReset;
 		}
 
-		protected ISessionImplementor Session
-		{
-			get { return _session; }
-		}
+		protected ISessionImplementor Session { get; }
 
 		/// <inheritdoc />
 		public int? Timeout { get; set; }
 
 		/// <inheritdoc />
+		public FlushMode? FlushMode { get; set; }
+
+		/// <inheritdoc />
 		public void Execute()
 		{
-			if (_queries.Count == 0)
+			if (_executed || _queries.Count == 0)
 				return;
+			var sessionFlushMode = Session.FlushMode;
+			if (FlushMode.HasValue)
+				Session.FlushMode = FlushMode.Value;
 			try
 			{
 				Init();
@@ -57,14 +60,48 @@ namespace NHibernate
 			}
 			finally
 			{
-				_queries.Clear();
+				if (_autoReset)
+				{
+					_queries.Clear();
+					_queriesByKey.Clear();
+				}
+				else
+					_executed = true;
+
+				if (FlushMode.HasValue)
+					Session.FlushMode = sessionFlushMode;
 			}
 		}
 
 		/// <inheritdoc />
 		public void Add(IQueryBatchItem query)
 		{
+			if (query == null)
+				throw new ArgumentNullException(nameof(query));
+			if (_executed)
+				throw new InvalidOperationException("The batch has already been executed, use another batch");
 			_queries.Add(query);
+		}
+
+		/// <inheritdoc />
+		public void Add(string key, IQueryBatchItem query)
+		{
+			Add(query);
+			_queriesByKey.Add(key, query);
+		}
+
+		/// <inheritdoc />
+		public IList<TResult> GetResult<TResult>(int queryIndex)
+		{
+			Execute();
+			return ((IQueryBatchItem<TResult>) _queries[queryIndex]).GetResults();
+		}
+
+		/// <inheritdoc />
+		public IList<TResult> GetResult<TResult>(string querykey)
+		{
+			Execute();
+			return ((IQueryBatchItem<TResult>) _queriesByKey[querykey]).GetResults();
 		}
 
 		private void Init()

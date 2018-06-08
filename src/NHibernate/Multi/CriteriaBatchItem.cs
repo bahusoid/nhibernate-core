@@ -1,17 +1,18 @@
+using System;
 using System.Collections.Generic;
 using NHibernate.Impl;
 using NHibernate.Loader.Criteria;
 using NHibernate.Persister.Entity;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	public partial class CriteriaBatchItem<T> : QueryBatchItemBase<T>
 	{
 		private readonly CriteriaImpl _criteria;
 
-		public CriteriaBatchItem(ICriteria criteria)
+		public CriteriaBatchItem(ICriteria query)
 		{
-			_criteria = (CriteriaImpl) criteria;
+			_criteria = (CriteriaImpl)query ?? throw new ArgumentNullException(nameof(query));
 		}
 
 		protected override List<QueryLoadInfo> GetQueryLoadInfo()

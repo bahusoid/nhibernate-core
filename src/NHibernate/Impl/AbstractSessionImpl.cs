@@ -16,6 +16,7 @@ using NHibernate.Hql;
 using NHibernate.Linq;
 using NHibernate.Loader.Custom;
 using NHibernate.Loader.Custom.Sql;
+using NHibernate.Multi;
 using NHibernate.Persister.Entity;
 using NHibernate.Transaction;
 using NHibernate.Type;
@@ -289,9 +290,7 @@ namespace NHibernate.Impl
 		public abstract FutureQueryBatch FutureQueryBatch { get; protected internal set; }
 	
 		public virtual IQueryBatch FutureBatch
-		{
-			get => _futureMultiBatch ?? (_futureMultiBatch = CreateQueryBatch());
-		}
+			=>_futureMultiBatch ?? (_futureMultiBatch = new QueryBatch(this, true));
 
 		public virtual IInterceptor Interceptor { get; protected set; }
 
@@ -645,7 +644,7 @@ namespace NHibernate.Impl
 
 		public virtual IQueryBatch CreateQueryBatch()
 		{
-			return new QueryBatch(this);
+			return new QueryBatch(this, false);
 		}
 	}
 }

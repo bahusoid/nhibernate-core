@@ -8,19 +8,20 @@
 //------------------------------------------------------------------------------
 
 
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using NHibernate.Engine;
 using NHibernate.Impl;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	using System.Threading.Tasks;
 	using System.Threading;
 	public partial class QueryBatchItem<TResult> : QueryBatchItemBase<TResult>
 	{
 
-		protected override Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken = default(CancellationToken))
+		protected override Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken)
 		{
 			if (cancellationToken.IsCancellationRequested)
 			{

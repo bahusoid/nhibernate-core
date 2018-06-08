@@ -5,152 +5,253 @@ using System.Linq;
 using System.Linq.Expressions;
 using System.Threading;
 using System.Threading.Tasks;
+using NHibernate.Engine;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	public static partial class QueryBatchExtensions
 	{
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver query)
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, IQueryOver query)
+		{
+			batch.Add(For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="key">A key for retrieval of the query result.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, string key, IQueryOver query)
+		{
+			if (batch == null)
+				throw new ArgumentNullException(nameof(batch));
+			batch.Add(key, For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
+		{
+			batch.Add(For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="key">A key for retrieval of the query result.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, string key, IQueryOver<TResult> query)
+		{
+			batch.Add(key, For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, ICriteria query)
+		{
+			batch.Add(For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="key">A key for retrieval of the query result.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, string key, ICriteria query)
+		{
+			batch.Add(key, For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, IQuery query)
+		{
+			batch.Add(For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="key">A key for retrieval of the query result.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, string key, IQuery query)
+		{
+			batch.Add(key, For<TResult>(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
+		{
+			batch.Add(For(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Adds a query to the batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="key">A key for retrieval of the query result.</param>
+		/// <param name="query">The query.</param>
+		/// <exception cref="InvalidOperationException">Thrown if the batch has already been executed.</exception>
+		/// <exception cref="ArgumentNullException">Thrown if <paramref name="query"/> is <see langword="null"/>.</exception>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch Add<TResult>(this IQueryBatch batch, string key, IQueryable<TResult> query)
+		{
+			batch.Add(key, For(query));
+			return batch;
+		}
+
+		/// <summary>
+		/// Sets the timeout in seconds for the underlying ADO.NET query.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="timeout">The timeout for the batch.</param>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch SetTimeout(this IQueryBatch batch, int? timeout)
+		{
+			batch.Timeout = timeout == RowSelection.NoValue ? null : timeout;
+			return batch;
+		}
+
+		/// <summary>
+		/// Overrides the current session flush mode, just for this query batch.
+		/// </summary>
+		/// <param name="batch">The batch.</param>
+		/// <param name="mode">The flush mode for the batch.</param>
+		/// <returns>The batch instance for method chain.</returns>
+		public static IQueryBatch SetFlushMode(this IQueryBatch batch, FlushMode mode)
+		{
+			batch.FlushMode = mode;
+			return batch;
+		}
+
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver query)
 		{
 			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
 		{
 			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, ICriteria query)
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, ICriteria query)
 		{
 			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQuery query)
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQuery query)
 		{
 			return AddAsEnumerable(batch, For<TResult>(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
 		{
-			return AddAsEnumerable(batch, For<TResult>(query));
+			return AddAsEnumerable(batch, For(query));
 		}
 
-		public static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
+		internal static IFutureEnumerable<TResult> AddAsEnumerable<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
 			return new FutureEnumerable<TResult>(AddAsList(batch, query));
 		}
 
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQuery query)
-		{
-			return AddAsList(batch, For<TResult>(query));
-		}
-
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, ICriteria query)
-		{
-			return AddAsList(batch, For<TResult>(query));
-		}
-
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryOver queryOver)
-		{
-			return AddAsList(batch, For<TResult>(queryOver));
-		}
-
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryOver<TResult> queryOver)
-		{
-			return AddAsList(batch, new CriteriaBatchItem<TResult>(queryOver.RootCriteria));
-		}
-
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryable<TResult> query)
-		{
-			return AddAsList(batch, For(query));
-		}
-
-		public static IFutureList<TResult> AddAsList<TSource, TResult>(this IQueryBatch batch, IQueryable<TSource> query, Expression<Func<IQueryable<TSource>, TResult>> selector)
-		{
-			return AddAsList(batch, For(query, selector));
-		}
-
-		public static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
+		internal static IFutureList<TResult> AddAsList<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
 			batch.Add(query);
 			return new FutureList<TResult>(batch, query);
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TSource, TResult>(this IQueryBatch batch, IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
+		internal static IFutureValue<TResult> AddAsValue<TSource, TResult>(this IQueryBatch batch, IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
 			return AddAsValue(batch, For(source, selector));
 		}
 
-		public static IFutureValue<TSource> AddAsValue<TSource>(this IQueryBatch batch, IQueryable<TSource> source)
+		internal static IFutureValue<TSource> AddAsValue<TSource>(this IQueryBatch batch, IQueryable<TSource> source)
 		{
 			return AddAsValue(batch, For(source));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, ICriteria query)
+		internal static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, ICriteria query)
 		{
 			return AddAsValue(batch, For<TResult>(query));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryOver query)
+		internal static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQuery query)
 		{
 			return AddAsValue(batch, For<TResult>(query));
 		}
 
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryOver<TResult> query)
+		internal static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
 		{
-			return AddAsValue(batch, For<TResult>(query));
-		}
-
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQuery query)
-		{
-			return AddAsValue(batch, For<TResult>(query));
-		}
-
-		public static IFutureValue<TResult> AddAsValue<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query)
-		{
-			batch.Add((IQueryBatchItem) query);
+			batch.Add(query);
 			return new FutureValue<TResult>(batch, query);
 		}
 
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryable<TResult> query, Action<IList<TResult>> processResults)
+		private static LinqBatchItem<TResult> For<TResult>(IQueryable<TResult> query)
 		{
-			AddOnAfterLoad(batch, For<TResult>(query), processResults);
+			return LinqBatchItem<TResult>.GetForQuery<TResult>(query);
 		}
 
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, ICriteria query, Action<IList<TResult>> processResults)
+		private static LinqBatchItem<TResult> For<TSource, TResult>(IQueryable<TSource> query, Expression<Func<IQueryable<TSource>, TResult>> selector)
 		{
-			AddOnAfterLoad(batch, For<TResult>(query), processResults);
-		}
-
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryOver<TResult> query, Action<IList<TResult>> processResults)
-		{
-			AddOnAfterLoad(batch, For<TResult>(query), processResults);
-		}
-
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryOver query, Action<IList<TResult>> processResults)
-		{
-			AddOnAfterLoad(batch, For<TResult>(query), processResults);
-		}
-
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQuery query, Action<IList<TResult>> processResults)
-		{
-			AddOnAfterLoad(batch, For<TResult>(query), processResults);
-		}
-
-		public static void AddOnAfterLoad<TResult>(this IQueryBatch batch, IQueryBatchItem<TResult> query, Action<IList<TResult>> processResults)
-		{
-			query.OnAfterLoad += processResults;
-			batch.Add(query);
-		}
-
-		private static LinqBatchItem<TResult> For<TResult>(IQueryable<TResult> source)
-		{
-			return new LinqBatchItem<TResult>(source);
-		}
-
-		private static LinqBatchItem<TResult> For<TSource, TResult>(IQueryable<TSource> source, Expression<Func<IQueryable<TSource>, TResult>> selector)
-		{
-			return LinqBatchItem<TSource>.GetForSelector(source, selector);
+			return LinqBatchItem<TSource>.GetForSelector(query, selector);
 		}
 
 		private static QueryBatchItem<TResult> For<TResult>(IQuery query)
@@ -165,6 +266,8 @@ namespace NHibernate
 
 		private static CriteriaBatchItem<TResult> For<TResult>(IQueryOver query)
 		{
+			if (query == null)
+				throw new ArgumentNullException(nameof(query));
 			return For<TResult>(query.RootCriteria);
 		}
 

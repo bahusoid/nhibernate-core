@@ -4,7 +4,7 @@ using System.Data.Common;
 using NHibernate.Engine;
 using NHibernate.SqlCommand;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	/// <summary>
 	/// Interface for wrapping query to be batchable by <see cref="IQueryBatch"/>

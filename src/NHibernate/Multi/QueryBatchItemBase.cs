@@ -8,7 +8,7 @@ using NHibernate.Engine;
 using NHibernate.SqlCommand;
 using NHibernate.Util;
 
-namespace NHibernate
+namespace NHibernate.Multi
 {
 	/// <summary>
 	/// Base class for both ICriteria and IQuery queries
