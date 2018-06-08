@@ -4,9 +4,21 @@ using System.Data.Common;
 using System.Linq;
 using System.Linq.Expressions;
 using NHibernate.Engine;
+using NHibernate.Impl;
+using NHibernate.Multi;
+using NHibernate.Util;
 
 namespace NHibernate
 {
+	// 6.0 TODO: Convert to interface methods
+	public static class StatelessSessionExtensions
+	{
+		public static IQueryBatch CreateQueryBatch(this IStatelessSession implementor)
+		{
+			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(implementor, "query batch").CreateQueryBatch();
+		}
+	}
+
 	/// <summary>
 	/// A command-oriented API for performing bulk operations against a database.
 	/// </summary>
