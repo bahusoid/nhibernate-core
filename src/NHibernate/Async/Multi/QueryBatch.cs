@@ -27,7 +27,7 @@ namespace NHibernate.Multi
 		public async Task ExecuteAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			if (_executed || _queries.Count == 0)
+			if (_queries.Count == 0)
 				return;
 			var sessionFlushMode = Session.FlushMode;
 			if (FlushMode.HasValue)
@@ -66,19 +66,31 @@ namespace NHibernate.Multi
 		}
 
 		/// <inheritdoc />
-		public async Task<IList<TResult>> GetResultAsync<TResult>(int queryIndex, CancellationToken cancellationToken)
+		public Task<IList<TResult>> GetResultAsync<TResult>(int queryIndex, CancellationToken cancellationToken)
 		{
-			cancellationToken.ThrowIfCancellationRequested();
-			await (ExecuteAsync(cancellationToken)).ConfigureAwait(false);
-			return ((IQueryBatchItem<TResult>) _queries[queryIndex]).GetResults();
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IList<TResult>>(cancellationToken);
+			}
+			return GetResultsAsync<TResult>(_queries[queryIndex], cancellationToken);
 		}
 
 		/// <inheritdoc />
-		public async Task<IList<TResult>> GetResultAsync<TResult>(string querykey, CancellationToken cancellationToken)
+		public Task<IList<TResult>> GetResultAsync<TResult>(string querykey, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IList<TResult>>(cancellationToken);
+			}
+			return GetResultsAsync<TResult>(_queriesByKey[querykey], cancellationToken);
+		}
+
+		private async Task<IList<TResult>> GetResultsAsync<TResult>(IQueryBatchItem query, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			await (ExecuteAsync(cancellationToken)).ConfigureAwait(false);
-			return ((IQueryBatchItem<TResult>) _queriesByKey[querykey]).GetResults();
+			if (!_executed)
+				await (ExecuteAsync(cancellationToken)).ConfigureAwait(false);
+			return ((IQueryBatchItem<TResult>)query).GetResults();
 		}
 
 		private async Task CombineQueriesAsync(IResultSetsCommand resultSetsCommand, CancellationToken cancellationToken)

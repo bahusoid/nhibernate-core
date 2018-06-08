@@ -73,15 +73,12 @@ namespace NHibernate.Multi
 					await (queryInfo.Loader.PutResultInQueryCacheAsync(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i], cancellationToken)).ConfigureAwait(false);
 				}
 			}
-
-			OnAfterLoad?.Invoke(GetResults());
 		}
 
 		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			_finalResults = await (ExecuteQueryNowAsync(cancellationToken)).ConfigureAwait(false);
-			OnAfterLoad?.Invoke(_finalResults);
 		}
 
 		protected abstract Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken);

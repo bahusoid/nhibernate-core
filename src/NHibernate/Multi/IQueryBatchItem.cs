@@ -16,12 +16,6 @@ namespace NHibernate.Multi
 		/// Must be called only after <see cref="IQueryBatch.Execute"/>.
 		/// </summary>
 		IList<TResult> GetResults();
-
-		/// <summary>
-		/// Event is executed after results are loaded by batch.
-		/// Loaded results are provided in action parameter.
-		/// </summary>
-		event Action<IList<TResult>> OnAfterLoad;
 	}
 
 	/// <summary>

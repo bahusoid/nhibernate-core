@@ -35,7 +35,7 @@ namespace NHibernate.Multi
 		/// <inheritdoc />
 		public void Execute()
 		{
-			if (_executed || _queries.Count == 0)
+			if (_queries.Count == 0)
 				return;
 			var sessionFlushMode = Session.FlushMode;
 			if (FlushMode.HasValue)
@@ -93,15 +93,20 @@ namespace NHibernate.Multi
 		/// <inheritdoc />
 		public IList<TResult> GetResult<TResult>(int queryIndex)
 		{
-			Execute();
-			return ((IQueryBatchItem<TResult>) _queries[queryIndex]).GetResults();
+			return GetResults<TResult>(_queries[queryIndex]);
 		}
 
 		/// <inheritdoc />
 		public IList<TResult> GetResult<TResult>(string querykey)
 		{
-			Execute();
-			return ((IQueryBatchItem<TResult>) _queriesByKey[querykey]).GetResults();
+			return GetResults<TResult>(_queriesByKey[querykey]);
+		}
+
+		private IList<TResult> GetResults<TResult>(IQueryBatchItem query)
+		{
+			if (!_executed)
+				Execute();
+			return ((IQueryBatchItem<TResult>)query).GetResults();
 		}
 
 		private void Init()

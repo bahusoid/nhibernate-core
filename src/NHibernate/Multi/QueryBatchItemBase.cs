@@ -172,14 +172,11 @@ namespace NHibernate.Multi
 					queryInfo.Loader.PutResultInQueryCache(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i]);
 				}
 			}
-
-			OnAfterLoad?.Invoke(GetResults());
 		}
 
 		public void ExecuteNonBatchable()
 		{
 			_finalResults = ExecuteQueryNow();
-			OnAfterLoad?.Invoke(_finalResults);
 		}
 
 		public IEnumerable<string> GetQuerySpaces()
@@ -211,8 +208,6 @@ namespace NHibernate.Multi
 		{
 			return _finalResults ?? (_finalResults = DoGetResults());
 		}
-
-		public event Action<IList<TResult>> OnAfterLoad;
 
 		protected abstract List<TResult> DoGetResults();
 
