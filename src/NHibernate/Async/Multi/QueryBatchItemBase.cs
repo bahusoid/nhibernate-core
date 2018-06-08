@@ -56,7 +56,7 @@ namespace NHibernate.Multi
 			return yields;
 		}
 
-		public async Task PostProcessAsync(CancellationToken cancellationToken)
+		public async Task ProcessResultsAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			for (int i = 0; i < _queryInfos.Count; i++)
@@ -67,7 +67,7 @@ namespace NHibernate.Multi
 					queryInfo.Loader.CreateSubselects(_subselectResultKeys[i], queryInfo.Parameters, Session);
 				}
 
-				//Maybe put in cache...
+				// Handle cache if cacheable.
 				if (queryInfo.Cache != null)
 				{
 					await (queryInfo.Loader.PutResultInQueryCacheAsync(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i], cancellationToken)).ConfigureAwait(false);
@@ -75,12 +75,12 @@ namespace NHibernate.Multi
 			}
 		}
 
-		public async Task ExecuteNonBatchableAsync(CancellationToken cancellationToken)
+		public async Task ExecuteNonBatchedAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			_finalResults = await (ExecuteQueryNowAsync(cancellationToken)).ConfigureAwait(false);
+			_finalResults = await (GetResultsNonBatchedAsync(cancellationToken)).ConfigureAwait(false);
 		}
 
-		protected abstract Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken);
+		protected abstract Task<IList<TResult>> GetResultsNonBatchedAsync(CancellationToken cancellationToken);
 	}
 }

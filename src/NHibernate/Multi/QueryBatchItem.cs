@@ -30,7 +30,7 @@ namespace NHibernate.Multi
 				}).ToList();
 		}
 
-		protected override IList<TResult> ExecuteQueryNow()
+		protected override IList<TResult> GetResultsNonBatched()
 		{
 			return Query.List<TResult>();
 		}

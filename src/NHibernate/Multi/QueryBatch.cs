@@ -48,7 +48,7 @@ namespace NHibernate.Multi
 				{
 					foreach (var query in _queries)
 					{
-						query.ExecuteNonBatchable();
+						query.ExecuteNonBatched();
 					}
 					return;
 				}
@@ -158,9 +158,9 @@ namespace NHibernate.Multi
 					{
 						foreach (var multiSource in _queries)
 						{
-							foreach (var processResultSetAction in multiSource.GetProcessResultSetActions())
+							foreach (var resultSetHandler in multiSource.GetResultSetHandler())
 							{
-								rowCount += processResultSetAction(reader);
+								rowCount += resultSetHandler(reader);
 								reader.NextResult();
 							}
 						}
@@ -169,7 +169,7 @@ namespace NHibernate.Multi
 
 				foreach (var multiSource in _queries)
 				{
-					multiSource.PostProcess();
+					multiSource.ProcessResults();
 				}
 			}
 			catch (Exception sqle)

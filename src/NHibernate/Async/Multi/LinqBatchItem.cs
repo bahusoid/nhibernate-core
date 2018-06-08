@@ -24,12 +24,12 @@ namespace NHibernate.Multi
 	public partial class LinqBatchItem<T> : QueryBatchItem<T>
 	{
 
-		protected override async Task<IList<T>> ExecuteQueryNowAsync(CancellationToken cancellationToken)
+		protected override async Task<IList<T>> GetResultsNonBatchedAsync(CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			if (_postExecuteTransformer == null)
 			{
-				return await (base.ExecuteQueryNowAsync(cancellationToken)).ConfigureAwait(false);
+				return await (base.GetResultsNonBatchedAsync(cancellationToken)).ConfigureAwait(false);
 			}
 
 			return GetTransformedResults(await (Query.ListAsync(cancellationToken)).ConfigureAwait(false));

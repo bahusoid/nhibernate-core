@@ -48,11 +48,11 @@ namespace NHibernate.Multi
 			return new LinqBatchItem<TResult>(q, linqEx);
 		}
 
-		protected override IList<T> ExecuteQueryNow()
+		protected override IList<T> GetResultsNonBatched()
 		{
 			if (_postExecuteTransformer == null)
 			{
-				return base.ExecuteQueryNow();
+				return base.GetResultsNonBatched();
 			}
 
 			return GetTransformedResults(Query.List());

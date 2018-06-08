@@ -43,7 +43,7 @@ namespace NHibernate.Multi
 			return list;
 		}
 
-		protected override IList<T> ExecuteQueryNow()
+		protected override IList<T> GetResultsNonBatched()
 		{
 			return _criteria.List<T>();
 		}

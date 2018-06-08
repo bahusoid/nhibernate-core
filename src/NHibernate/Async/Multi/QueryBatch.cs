@@ -40,7 +40,7 @@ namespace NHibernate.Multi
 				{
 					foreach (var query in _queries)
 					{
-						await (query.ExecuteNonBatchableAsync(cancellationToken)).ConfigureAwait(false);
+						await (query.ExecuteNonBatchedAsync(cancellationToken)).ConfigureAwait(false);
 					}
 					return;
 				}
@@ -136,9 +136,9 @@ namespace NHibernate.Multi
 					{
 						foreach (var multiSource in _queries)
 						{
-							foreach (var processResultSetAction in multiSource.GetProcessResultSetActions())
+							foreach (var resultSetHandler in multiSource.GetResultSetHandler())
 							{
-								rowCount += processResultSetAction(reader);
+								rowCount += resultSetHandler(reader);
 								await (reader.NextResultAsync(cancellationToken)).ConfigureAwait(false);
 							}
 						}
@@ -147,7 +147,7 @@ namespace NHibernate.Multi
 
 				foreach (var multiSource in _queries)
 				{
-					await (multiSource.PostProcessAsync(cancellationToken)).ConfigureAwait(false);
+					await (multiSource.ProcessResultsAsync(cancellationToken)).ConfigureAwait(false);
 				}
 			}
 			catch (OperationCanceledException) { throw; }

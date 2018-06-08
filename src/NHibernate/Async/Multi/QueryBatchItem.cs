@@ -21,7 +21,7 @@ namespace NHibernate.Multi
 	public partial class QueryBatchItem<TResult> : QueryBatchItemBase<TResult>
 	{
 
-		protected override Task<IList<TResult>> ExecuteQueryNowAsync(CancellationToken cancellationToken)
+		protected override Task<IList<TResult>> GetResultsNonBatchedAsync(CancellationToken cancellationToken)
 		{
 			if (cancellationToken.IsCancellationRequested)
 			{

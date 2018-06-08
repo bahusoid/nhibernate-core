@@ -32,12 +32,12 @@ namespace NHibernate.Multi
 		/// Executed after all commands in batch are processed
 		/// </summary>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		Task PostProcessAsync(CancellationToken cancellationToken);
+		Task ProcessResultsAsync(CancellationToken cancellationToken);
 
 		/// <summary>
 		/// Immediate query execution in case dialect is non batchable
 		/// </summary>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		Task ExecuteNonBatchableAsync(CancellationToken cancellationToken);
+		Task ExecuteNonBatchedAsync(CancellationToken cancellationToken);
 	}
 }

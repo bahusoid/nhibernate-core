@@ -75,7 +75,7 @@ namespace NHibernate.Multi
 			}
 		}
 
-		public IEnumerable<Func<DbDataReader, int>> GetProcessResultSetActions()
+		public IEnumerable<Func<DbDataReader, int>> GetResultSetHandler()
 		{
 			var dialect = Session.Factory.Dialect;
 			List<object>[] hydratedObjects = new List<object>[_queryInfos.Count];
@@ -156,7 +156,7 @@ namespace NHibernate.Multi
 			}
 		}
 
-		public void PostProcess()
+		public void ProcessResults()
 		{
 			for (int i = 0; i < _queryInfos.Count; i++)
 			{
@@ -166,7 +166,7 @@ namespace NHibernate.Multi
 					queryInfo.Loader.CreateSubselects(_subselectResultKeys[i], queryInfo.Parameters, Session);
 				}
 
-				//Maybe put in cache...
+				// Handle cache if cacheable.
 				if (queryInfo.Cache != null)
 				{
 					queryInfo.Loader.PutResultInQueryCache(Session, queryInfo.Parameters, queryInfo.Cache, queryInfo.CacheKey, _loaderResults[i]);
@@ -174,9 +174,9 @@ namespace NHibernate.Multi
 			}
 		}
 
-		public void ExecuteNonBatchable()
+		public void ExecuteNonBatched()
 		{
-			_finalResults = ExecuteQueryNow();
+			_finalResults = GetResultsNonBatched();
 		}
 
 		public IEnumerable<string> GetQuerySpaces()
@@ -184,7 +184,7 @@ namespace NHibernate.Multi
 			return _queryInfos.SelectMany(q => q.QuerySpaces);
 		}
 
-		protected abstract IList<TResult> ExecuteQueryNow();
+		protected abstract IList<TResult> GetResultsNonBatched();
 
 		protected List<T> GetTypedResults<T>()
 		{
