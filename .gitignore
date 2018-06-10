@@ -14,3 +14,4 @@ NHibernate.dll
 TestResult.xml
 .vscode
 .DS_Store
+/build-common/NHibernate.dev.props
