@@ -1,220 +1,114 @@
-﻿
+﻿using System.Collections.Generic;
 
-using System;
-using System.Collections.Generic;
 namespace NHibernate.Test.NHSpecificTest.NH3079
 {
 	public class PersonCpId
 	{
-		private Int32? idA;
-		public Int32? IdA
-		{
-			get { return idA; }
-			set { idA = value; }
-		}
+		public int IdA { get; set; }
 
-		private Int32? idB;
-		public Int32? IdB
-		{
-			get { return idB; }
-			set { idB = value; }
-		}
+		public int IdB { get; set; }
 
-		// override object.Equals
 		public override bool Equals(object obj)
 		{
-			if (obj == null || GetType() != obj.GetType())
-			{
+			if (!(obj is PersonCpId objCpId))
 				return false;
-			}
-			PersonCpId objCpId = (PersonCpId)obj;
-			return this.IdA == objCpId.IdA && this.IdB == this.IdB;
+
+			return IdA == objCpId.IdA && IdB == objCpId.IdB;
 		}
 
-		// override object.GetHashCode
 		public override int GetHashCode()
 		{
-			return  this.IdA.Value + this.IdB.Value;
+			return IdA.GetHashCode() ^ IdB.GetHashCode();
 		}
 	}
+
 	public class Person
 	{
-		private PersonCpId cpId;
-		public virtual PersonCpId CpId
-		{
-			get { return cpId; }
-			set { cpId = value; }
-		}
+		public virtual PersonCpId CpId { get; set; }
 
-		private String name;
-		public virtual String Name
-		{
-			get { return name; }
-			set { name = value; }
-		}
+		public virtual string Name { get; set; }
 
-		private ICollection<Employment> employmentList;
-		public virtual ICollection<Employment> EmploymentList
-		{
-			get { return employmentList; }
-			set { employmentList = value; }
-		}
+		public virtual ICollection<Employment> EmploymentList { get; set; }
 	}
 
 	public class EmployerCpId
 	{
-		private Int32? idA;
-		public virtual Int32? IdA
-		{
-			get { return idA; }
-			set { idA = value; }
-		}
+		public virtual int IdA { get; set; }
 
-		private Int32? idB;
-		public virtual Int32? IdB
-		{
-			get { return idB; }
-			set { idB = value; }
-		}
+		public virtual int IdB { get; set; }
 
-		// override object.Equals
 		public override bool Equals(object obj)
 		{
-			if (obj == null || GetType() != obj.GetType())
-			{
+			if (!(obj is EmployerCpId objCpId))
 				return false;
-			}
-			EmployerCpId objCpId = (EmployerCpId)obj;
-			return this.IdA == objCpId.IdA && this.IdB == this.IdB;
+
+			return IdA == objCpId.IdA && IdB == objCpId.IdB;
 		}
 
-		// override object.GetHashCode
 		public override int GetHashCode()
 		{
-			return this.IdA.Value + this.IdB.Value;
+			return IdA.GetHashCode() ^ IdB.GetHashCode();
 		}
 	}
 
 	public class Employer
 	{
-		private EmployerCpId cpId;
-		public virtual EmployerCpId CpId
-		{
-			get { return cpId; }
-			set { cpId = value; }
-		}
+		public virtual EmployerCpId CpId { get; set; }
 
-		private String name;
-		public virtual String Name
-		{
-			get { return name; }
-			set { name = value; }
-		}
+		public virtual string Name { get; set; }
 
-		private ICollection<Employment> employmentList;
-		public virtual ICollection<Employment> EmploymentList
-		{
-			get { return employmentList; }
-			set { employmentList = value; }
-		}
+		public virtual ICollection<Employment> EmploymentList { get; set; }
 	}
 
 	public class EmploymentCpId
 	{
-		private Int32? id;
-		public virtual Int32? Id
-		{
-			get { return id; }
-			set { id = value; }
-		}
+		public virtual int Id { get; set; }
 
-		private Person personObj;
-		public virtual Person PersonObj
-		{
-			get { return personObj; }
-			set { personObj = value; }
-		}
+		public virtual Person PersonObj { get; set; }
 
-		private Employer employerObj;
-		public virtual Employer EmployerObj
-		{
-			get { return employerObj; }
-			set { employerObj = value; }
-		}
+		public virtual Employer EmployerObj { get; set; }
 
-		// override object.Equals
 		public override bool Equals(object obj)
 		{
-			if (obj == null || GetType() != obj.GetType())
-			{
+			if (!(obj is EmploymentCpId objCpId))
 				return false;
-			}
-			EmploymentCpId objCpId = (EmploymentCpId)obj;
-			return this.Id == objCpId.Id && this.PersonObj.CpId == this.PersonObj.CpId && this.EmployerObj.CpId == this.EmployerObj.CpId;
+
+			return Id == objCpId.Id && PersonObj.CpId == objCpId.PersonObj.CpId &&
+				EmployerObj.CpId == objCpId.EmployerObj.CpId;
 		}
 
-		// override object.GetHashCode
 		public override int GetHashCode()
 		{
-			return this.Id.Value + this.PersonObj.CpId.GetHashCode() + this.EmployerObj.CpId.GetHashCode();
+			return Id.GetHashCode() ^ PersonObj.CpId.GetHashCode() ^ EmployerObj.CpId.GetHashCode();
 		}
 	}
 
 	public class Employment
 	{
-		private EmploymentCpId cpId;
-		public virtual EmploymentCpId CpId
-		{
-			get { return cpId; }
-			set { cpId = value; }
-		}
+		public virtual EmploymentCpId CpId { get; set; }
 
-		private String name;
-		public virtual String Name
-		{
-			get { return name; }
-			set { name = value; }
-		}
+		public virtual string Name { get; set; }
 	}
 
 	public class PersonNoComponent
 	{
-		private Int32? idA;
-		public virtual Int32? IdA
-		{
-			get { return idA; }
-			set { idA = value; }
-		}
+		public virtual int IdA { get; set; }
 
-		private Int32? idB;
-		public virtual Int32? IdB
-		{
-			get { return idB; }
-			set { idB = value; }
-		}
+		public virtual int IdB { get; set; }
 
-		private String name;
-		public virtual String Name
-		{
-			get { return name; }
-			set { name = value; }
-		}
+		public virtual string Name { get; set; }
 
-		// override object.Equals
 		public override bool Equals(object obj)
 		{
-			if (obj == null || GetType() != obj.GetType())
-			{
+			if (!(obj is PersonNoComponent objNoComponent))
 				return false;
-			}
-			PersonCpId objCpId = (PersonCpId)obj;
-			return this.IdA == objCpId.IdA && this.IdB == this.IdB;
+
+			return IdA == objNoComponent.IdA && IdB == objNoComponent.IdB;
 		}
 
-		// override object.GetHashCode
 		public override int GetHashCode()
 		{
-			return this.IdA.Value + this.IdB.Value;
+			return IdA.GetHashCode() ^ IdB.GetHashCode();
 		}
 	}
 }
