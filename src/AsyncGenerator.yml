@@ -104,6 +104,9 @@
     - conversion: Ignore
       name: GetEnumerator
       containingTypeName: IFutureEnumerable
+    - conversion: Ignore
+      name: ComputeFlattenedParameters
+      containingTypeName: SqlQueryImpl
     - conversion: ToAsync
       name: ExecuteReader
       containingTypeName: IBatcher
@@ -115,7 +118,7 @@
     - conversion: ToAsync
       rule: Cache
     - conversion: ToAsync
-      rule: TransactionCompletion      
+      rule: TransactionCompletion
     typeConversion:
     - conversion: Ignore
       name: EnumerableImpl
