@@ -127,6 +127,8 @@ namespace NHibernate.Test.Stateless.FetchingLazyCollections
 				Assert.That(rf[0].Father.Description, Is.EqualTo(crocodileFather));
 				Assert.That(rf[0].Mother.Description, Is.EqualTo(crocodileMother));
 				Assert.That(NHibernateUtil.IsInitialized(hf[0].Childs), Is.False, "Lazy collection should NOT be initialized");
+				var count = hf[0].Childs.Count;
+
 
 				tx.Commit();
 			}

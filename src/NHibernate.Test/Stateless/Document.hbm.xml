@@ -11,6 +11,11 @@
 		</id>
 		<timestamp name="LastModified"/>
 		<property name="Text"/>
+		<property name="Rating"/>
+		<bag name="References" cascade="all">
+			<key column="parent_id" />
+			<one-to-many class="Document" />
+		</bag>
 	</class>
 
 	<class name="Paper">

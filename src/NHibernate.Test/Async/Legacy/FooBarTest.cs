@@ -1111,8 +1111,8 @@ namespace NHibernate.Test.Legacy
 				if (Dialect.SupportsSubSelects)
 				{
 					if (Dialect.SupportsScalarSubSelects)
-						await ((await (s.CreateFilterAsync(baz.FooArray, "where size(this.Bytes) > 0"))).ListAsync());
-					await ((await (s.CreateFilterAsync(baz.FooArray, "where 0 in elements(this.Bytes)"))).ListAsync());
+						await (s.CreateFilter(baz.FooArray, "where size(this.Bytes) > 0").ListAsync());
+					await (s.CreateFilter(baz.FooArray, "where 0 in elements(this.Bytes)").ListAsync());
 				}
 				await (s.FlushAsync());
 			}
@@ -2176,7 +2176,7 @@ namespace NHibernate.Test.Legacy
 			Assert.AreEqual(1, baz.FooArray.Length);
 			Assert.AreEqual(1, (await (s.CreateQuery("from Baz baz join baz.FooArray foo").ListAsync())).Count);
 			Assert.AreEqual(2, (await (s.CreateQuery("from Foo foo").ListAsync())).Count);
-			Assert.AreEqual(1, (await ((await (s.CreateFilterAsync(baz.FooArray, ""))).ListAsync())).Count);
+			Assert.AreEqual(1, (await (s.CreateFilter(baz.FooArray, "").ListAsync())).Count);
 
 			await (s.DeleteAsync("from Foo foo"));
 			await (s.DeleteAsync(baz));

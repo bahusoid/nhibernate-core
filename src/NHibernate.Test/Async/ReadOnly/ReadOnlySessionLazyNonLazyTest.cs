@@ -1142,13 +1142,13 @@ namespace NHibernate.Test.ReadOnly
 							c.NonLazySelectDataPoints.First()
 						});
 
-			IList list = await ((await (s.CreateFilterAsync(c.LazyDataPoints, ""))).SetMaxResults(1).SetReadOnly(false).ListAsync());
+			IList list = await (s.CreateFilter(c.LazyDataPoints, "").SetMaxResults(1).SetReadOnly(false).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
-			list = await ((await (s.CreateFilterAsync(c.NonLazyJoinDataPoints, ""))).SetMaxResults(1).SetReadOnly(false).ListAsync());
+			list = await (s.CreateFilter(c.NonLazyJoinDataPoints, "").SetMaxResults(1).SetReadOnly(false).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
-			list = await ((await (s.CreateFilterAsync(c.NonLazySelectDataPoints, ""))).SetMaxResults(1).SetReadOnly(false).ListAsync());
+			list = await (s.CreateFilter(c.NonLazySelectDataPoints, "").SetMaxResults(1).SetReadOnly(false).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
 			await (t.CommitAsync());
@@ -1215,13 +1215,13 @@ namespace NHibernate.Test.ReadOnly
 						});
 
 			expectedReadOnlyObjects = new HashSet<object>();
-			IList list = await ((await (s.CreateFilterAsync(c.LazyDataPoints, ""))).SetMaxResults(1).SetReadOnly(true).ListAsync());
+			IList list = await (s.CreateFilter(c.LazyDataPoints, "").SetMaxResults(1).SetReadOnly(true).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
-			list = await ((await (s.CreateFilterAsync(c.NonLazyJoinDataPoints, ""))).SetMaxResults(1).SetReadOnly(true).ListAsync());
+			list = await (s.CreateFilter(c.NonLazyJoinDataPoints, "").SetMaxResults(1).SetReadOnly(true).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
-			list = await ((await (s.CreateFilterAsync(c.NonLazySelectDataPoints, ""))).SetMaxResults(1).SetReadOnly(true).ListAsync());
+			list = await (s.CreateFilter(c.NonLazySelectDataPoints, "").SetMaxResults(1).SetReadOnly(true).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
 			await (t.CommitAsync());
@@ -1304,14 +1304,14 @@ namespace NHibernate.Test.ReadOnly
 							c.NonLazySelectDataPoints.First()
 						});
 
-			IList list = await ((await (s.CreateFilterAsync(c.LazyDataPoints, ""))).SetMaxResults(1).ListAsync());
+			IList list = await (s.CreateFilter(c.LazyDataPoints, "").SetMaxResults(1).ListAsync());
 			
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
-			list = await ((await (s.CreateFilterAsync(c.NonLazyJoinDataPoints, ""))).SetMaxResults(1).ListAsync());
+			list = await (s.CreateFilter(c.NonLazyJoinDataPoints, "").SetMaxResults(1).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
-			list = await ((await (s.CreateFilterAsync(c.NonLazySelectDataPoints, ""))).SetMaxResults(1).ListAsync());
+			list = await (s.CreateFilter(c.NonLazySelectDataPoints, "").SetMaxResults(1).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.True);
 			await (t.CommitAsync());
@@ -1378,13 +1378,13 @@ namespace NHibernate.Test.ReadOnly
 						});
 
 			expectedReadOnlyObjects = new HashSet<object>();
-			IList list = await ((await (s.CreateFilterAsync(c.LazyDataPoints, "" ))).SetMaxResults(1).ListAsync());
+			IList list = await (s.CreateFilter(c.LazyDataPoints, "" ).SetMaxResults(1).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
-			list = await ((await (s.CreateFilterAsync(c.NonLazyJoinDataPoints, ""))).SetMaxResults(1).ListAsync());
+			list = await (s.CreateFilter(c.NonLazyJoinDataPoints, "").SetMaxResults(1).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
-			list = await ((await (s.CreateFilterAsync(c.NonLazySelectDataPoints, ""))).SetMaxResults(1).ListAsync());
+			list = await (s.CreateFilter(c.NonLazySelectDataPoints, "").SetMaxResults(1).ListAsync());
 			Assert.That(list.Count, Is.EqualTo(1));
 			Assert.That(s.IsReadOnly(list[0]), Is.False);
 			await (t.CommitAsync());

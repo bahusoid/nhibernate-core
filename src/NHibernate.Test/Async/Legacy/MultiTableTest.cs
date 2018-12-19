@@ -98,7 +98,7 @@ namespace NHibernate.Test.Legacy
 			Assert.AreEqual(2, sm.Children.Count);
 
 			ICollection filterColl =
-				await ((await (s.CreateFilterAsync(sm.MoreChildren, "select count(*) where this.Amount>-1 and this.Name is null"))).ListAsync());
+				await (s.CreateFilter(sm.MoreChildren, "select count(*) where this.Amount>-1 and this.Name is null").ListAsync());
 			foreach (object obj in filterColl)
 			{
 				Assert.AreEqual(2, obj);

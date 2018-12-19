@@ -412,9 +412,9 @@ namespace NHibernate.Test.Legacy
 			Assert.AreEqual(8, j, "iterate on composite key");
 
 			fum = (Fum) await (s.LoadAsync(typeof(Fum), fum.Id));
-			await ((await (s.CreateFilterAsync(fum.QuxArray, "where this.Foo is null"))).ListAsync());
-			(await (s.CreateFilterAsync(fum.QuxArray, "where this.Foo.id = ?"))).SetString(0, "fooid");
-			IQuery f = await (s.CreateFilterAsync(fum.QuxArray, "where this.Foo.id = :fooId"));
+			await (s.CreateFilter(fum.QuxArray, "where this.Foo is null").ListAsync());
+			s.CreateFilter(fum.QuxArray, "where this.Foo.id = ?").SetString(0, "fooid");
+			IQuery f = s.CreateFilter(fum.QuxArray, "where this.Foo.id = :fooId");
 			f.SetString("fooId", "abc");
 			Assert.IsFalse((await (f.EnumerableAsync())).GetEnumerator().MoveNext());
 

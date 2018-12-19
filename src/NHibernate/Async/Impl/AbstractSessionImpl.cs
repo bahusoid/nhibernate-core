@@ -92,7 +92,14 @@ namespace NHibernate.Impl
 			}
 		}
 
-		public abstract Task<IList> ListFilterAsync(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken);
+		public virtual async Task<IList> ListFilterAsync(object collection, string filter, QueryParameters queryParameters, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			var results = new List<object>();
+			await (FilterAsync(collection, filter, queryParameters, results, cancellationToken)).ConfigureAwait(false);
+			return results;
+		}
+
 		public async Task<IList> ListFilterAsync(object collection, IQueryExpression queryExpression, QueryParameters parameters, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
@@ -103,9 +110,68 @@ namespace NHibernate.Impl
 			await (ListFilterAsync(collection, queryExpression, parameters, results, cancellationToken)).ConfigureAwait(false);
 			return results;
 		}
-		protected abstract Task ListFilterAsync(object collection, IQueryExpression queryExpression, QueryParameters parameters, IList results, CancellationToken cancellationToken);
 
-		public abstract Task<IList<T>> ListFilterAsync<T>(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken);
+		protected virtual Task ListFilterAsync(object collection, IQueryExpression queryExpression, QueryParameters queryParameters, IList results, CancellationToken cancellationToken)
+		{
+			if (collection == null)
+				throw new ArgumentNullException(nameof(collection));
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<object>(cancellationToken);
+			}
+			return ListAsync(queryExpression, queryParameters, results, collection, cancellationToken);
+		}
+
+		public virtual async Task<IList<T>> ListFilterAsync<T>(object collection, string filter, QueryParameters queryParameters, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			List<T> results = new List<T>();
+			await (FilterAsync(collection, filter, queryParameters, results, cancellationToken)).ConfigureAwait(false);
+			return results;
+		}
+
+		protected async Task ListAsync(IQueryExpression queryExpression, QueryParameters queryParameters, IList results, object filterConnection, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using (BeginProcess())
+			{
+				queryParameters.ValidateParameters();
+
+				var isFilter = filterConnection != null;
+				var plan = isFilter
+					? await (GetFilterQueryPlanAsync(filterConnection, queryExpression, queryParameters, false, cancellationToken)).ConfigureAwait(false)
+					: GetHQLQueryPlan(queryExpression, false);
+
+				// GetFilterQueryPlan has already auto flushed or fully flush.
+				if (!isFilter)
+					await (AutoFlushIfRequiredAsync(plan.QuerySpaces, cancellationToken)).ConfigureAwait(false);
+
+				bool success = false;
+				using (SuspendAutoFlush()) //stops flush being called multiple times if this method is recursively called
+				{
+					try
+					{
+						await (plan.PerformListAsync(queryParameters, this, results, cancellationToken)).ConfigureAwait(false);
+						success = true;
+					}
+					catch (OperationCanceledException) { throw; }
+					catch (HibernateException)
+					{
+						// Do not call Convert on HibernateExceptions
+						throw;
+					}
+					catch (Exception e)
+					{
+						throw Convert(e, "Could not execute query");
+					}
+					finally
+					{
+						await (AfterOperationAsync(success, cancellationToken)).ConfigureAwait(false);
+					}
+				}
+			}
+		}
+
 		public abstract Task<IEnumerable> EnumerableFilterAsync(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken);
 		public abstract Task<IEnumerable<T>> EnumerableFilterAsync<T>(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken);
 		public abstract Task BeforeTransactionCompletionAsync(ITransaction tx, CancellationToken cancellationToken);
@@ -209,12 +275,156 @@ namespace NHibernate.Impl
 			}
 		}
 
-		public abstract Task<IQuery> CreateFilterAsync(object collection, IQueryExpression queryExpression, CancellationToken cancellationToken);
+		public async Task<IQuery> CreateFilterAsync(object collection, string queryString, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using (BeginProcess())
+			{
+				var plan = await (GetFilterQueryPlanAsync(collection, queryString, null, false, cancellationToken)).ConfigureAwait(false);
+				var filter = new CollectionFilterImpl(queryString, collection, this, plan.ParameterMetadata);
+				//filter.SetComment(queryString);
+				return filter;
+			}
+		}
+
+		public virtual async Task<IQuery> CreateFilterAsync(object collection, IQueryExpression queryExpression, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using (BeginProcess())
+			{
+				var plan = await (GetFilterQueryPlanAsync(collection, queryExpression, null, false, cancellationToken)).ConfigureAwait(false);
+				var filter = new ExpressionFilterImpl(plan.QueryExpression, collection, this, plan.ParameterMetadata);
+				return filter;
+			}
+		}
 
 		public abstract Task<IEnumerable> EnumerableAsync(IQueryExpression queryExpression, QueryParameters queryParameters, CancellationToken cancellationToken);
 
 		public abstract Task<IEnumerable<T>> EnumerableAsync<T>(IQueryExpression queryExpression, QueryParameters queryParameters, CancellationToken cancellationToken);
 
 		public abstract Task<int> ExecuteUpdateAsync(IQueryExpression queryExpression, QueryParameters queryParameters, CancellationToken cancellationToken);
+
+		protected Task<IQueryExpressionPlan> GetFilterQueryPlanAsync(object collection, IQueryExpression queryExpression, QueryParameters parameters, bool shallow, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IQueryExpressionPlan>(cancellationToken);
+			}
+			return GetFilterQueryPlanAsync(collection, parameters, shallow, null, queryExpression, cancellationToken);
+		}
+
+		protected Task<IQueryExpressionPlan> GetFilterQueryPlanAsync(object collection, string filter, QueryParameters parameters, bool shallow, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IQueryExpressionPlan>(cancellationToken);
+			}
+			return GetFilterQueryPlanAsync(collection, parameters, shallow, filter, null, cancellationToken);
+		}
+
+		private Task<IQueryExpressionPlan> GetFilterQueryPlanAsync(object collection, QueryParameters parameters, bool shallow,
+			string filter, IQueryExpression queryExpression, CancellationToken cancellationToken)
+		{
+			if (collection == null)
+				throw new ArgumentNullException(nameof(collection), "null collection passed to filter");
+			if (filter != null && queryExpression != null)
+				throw new ArgumentException($"Either {nameof(filter)} or {nameof(queryExpression)} must be specified, not both.");
+			if (filter == null && queryExpression == null)
+				throw new ArgumentException($"{nameof(filter)} and {nameof(queryExpression)} were both null.");
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IQueryExpressionPlan>(cancellationToken);
+			}
+			return InternalGetFilterQueryPlanAsync();
+			async Task<IQueryExpressionPlan> InternalGetFilterQueryPlanAsync()
+			{
+
+				IQueryExpressionPlan GetFilterQueryPlan(string role) =>
+				filter == null
+				? Factory.QueryPlanCache.GetFilterQueryPlan(queryExpression, role, shallow, EnabledFilters)
+				: Factory.QueryPlanCache.GetFilterQueryPlan(filter, role, shallow, EnabledFilters);
+
+				var persistenceContext = PersistenceContext;
+				var entry = persistenceContext.GetCollectionEntryOrNull(collection);
+				var roleBeforeFlush = entry?.LoadedPersister;
+
+				IQueryExpressionPlan plan;
+				if (roleBeforeFlush == null)
+				{
+					// if it was previously unreferenced, we need to flush in order to
+					// get its state into the database in order to execute query
+					await (FlushAsync(cancellationToken)).ConfigureAwait(false);
+					entry = persistenceContext.GetCollectionEntryOrNull(collection);
+					var roleAfterFlush = entry?.LoadedPersister;
+					if (roleAfterFlush == null)
+					{
+						throw new QueryException("The collection was unreferenced");
+					}
+					plan = GetFilterQueryPlan(roleAfterFlush.Role);
+				}
+				else
+				{
+					// otherwise, we only need to flush if there are in-memory changes
+					// to the queried tables
+					plan = GetFilterQueryPlan(roleBeforeFlush.Role);
+					if (await (AutoFlushIfRequiredAsync(plan.QuerySpaces, cancellationToken)).ConfigureAwait(false))
+					{
+						// might need to run a different filter entirely after the flush
+						// because the collection role may have changed
+						entry = persistenceContext.GetCollectionEntryOrNull(collection);
+						var roleAfterFlush = entry?.LoadedPersister;
+						if (roleBeforeFlush != roleAfterFlush)
+						{
+							if (roleAfterFlush == null)
+							{
+								throw new QueryException("The collection was dereferenced");
+							}
+							plan = GetFilterQueryPlan(roleAfterFlush.Role);
+						}
+					}
+				}
+
+				if (parameters != null)
+				{
+					parameters.PositionalParameterValues[0] = entry.LoadedKey;
+					parameters.PositionalParameterTypes[0] = entry.LoadedPersister.KeyType;
+				}
+
+				return plan;
+			}
+		}
+
+		protected virtual async Task FilterAsync(object collection, string filter, QueryParameters queryParameters, IList results, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			using (BeginProcess())
+			{
+				var plan = await (GetFilterQueryPlanAsync(collection, filter, queryParameters, false, cancellationToken)).ConfigureAwait(false);
+
+				bool success = false;
+				using (SuspendAutoFlush()) //stops flush being called multiple times if this method is recursively called
+				{
+					try
+					{
+						await (plan.PerformListAsync(queryParameters, this, results, cancellationToken)).ConfigureAwait(false);
+						success = true;
+					}
+					catch (OperationCanceledException) { throw; }
+					catch (HibernateException)
+					{
+						// Do not call Convert on HibernateExceptions
+						throw;
+					}
+					catch (Exception e)
+					{
+						throw Convert(e, "could not execute query");
+					}
+					finally
+					{
+						await (AfterOperationAsync(success, cancellationToken)).ConfigureAwait(false);
+					}
+				}
+			}
+		}
 	}
 }

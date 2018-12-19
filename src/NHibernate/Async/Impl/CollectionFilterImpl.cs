@@ -13,11 +13,14 @@ using NHibernate.Engine;
 using NHibernate.Engine.Query;
 using NHibernate.Type;
 using System.Collections.Generic;
+using System.Linq;
+using System;
 
 namespace NHibernate.Impl
 {
 	using System.Threading.Tasks;
 	using System.Threading;
+
 	public partial class CollectionFilterImpl : QueryImpl
 	{
 
@@ -33,7 +36,7 @@ namespace NHibernate.Impl
 				IDictionary<string, TypedValue> namedParams = NamedParams;
 				return Session.EnumerableFilterAsync(collection, ExpandParameterLists(namedParams), GetQueryParameters(namedParams), cancellationToken);
 			}
-			catch (System.Exception ex)
+			catch (Exception ex)
 			{
 				return Task.FromException<IEnumerable>(ex);
 			}
@@ -51,9 +54,27 @@ namespace NHibernate.Impl
 				IDictionary<string, TypedValue> namedParams = NamedParams;
 				return Session.EnumerableFilterAsync<T>(collection, ExpandParameterLists(namedParams), GetQueryParameters(namedParams), cancellationToken);
 			}
-			catch (System.Exception ex)
+			catch (Exception ex)
 			{
 				return Task.FromException<IEnumerable<T>>(ex);
+			}
+		}
+
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
+		protected internal override Task<IEnumerable<ITranslator>> GetTranslatorsAsync(ISessionImplementor session, QueryParameters queryParameters, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IEnumerable<ITranslator>>(cancellationToken);
+			}
+			try
+			{
+				return Task.FromResult<IEnumerable<ITranslator>>(GetTranslators(session, queryParameters));
+			}
+			catch (Exception ex)
+			{
+				return Task.FromException<IEnumerable<ITranslator>>(ex);
 			}
 		}
 
@@ -69,7 +90,7 @@ namespace NHibernate.Impl
 				IDictionary<string, TypedValue> namedParams = NamedParams;
 				return Session.ListFilterAsync(collection, ExpandParameterLists(namedParams), GetQueryParameters(namedParams), cancellationToken);
 			}
-			catch (System.Exception ex)
+			catch (Exception ex)
 			{
 				return Task.FromException<IList>(ex);
 			}
@@ -87,7 +108,7 @@ namespace NHibernate.Impl
 				IDictionary<string, TypedValue> namedParams = NamedParams;
 				return Session.ListFilterAsync<T>(collection, ExpandParameterLists(namedParams), GetQueryParameters(namedParams), cancellationToken);
 			}
-			catch (System.Exception ex)
+			catch (Exception ex)
 			{
 				return Task.FromException<IList<T>>(ex);
 			}

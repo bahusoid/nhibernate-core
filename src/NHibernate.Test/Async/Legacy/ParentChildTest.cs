@@ -345,7 +345,7 @@ namespace NHibernate.Test.Legacy
 			Assert.AreEqual(2, (await (s.CreateQuery("from Baz baz join baz.Parts").ListAsync())).Count);
 
 			baz = (Baz) await (s.CreateCriteria(typeof(Baz)).UniqueResultAsync());
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(baz.Parts, ""))).ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(baz.Parts, "").ListAsync())).Count);
 			//assertTrue( baz.getParts().size()==1 );
 			await (s.DeleteAsync("from Part"));
 			await (s.DeleteAsync(baz));

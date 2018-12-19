@@ -44,9 +44,11 @@ namespace NHibernate.Engine
 			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(session, "future batch").FutureBatch;
 		}
 
-		internal static void AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
+		internal static bool AutoFlushIfRequired(this ISessionImplementor implementor, ISet<string> querySpaces)
 		{
-			(implementor as AbstractSessionImpl)?.AutoFlushIfRequired(querySpaces);
+			if ((implementor as AbstractSessionImpl)?.AutoFlushIfRequired(querySpaces) == true)
+				return true;
+			return false;
 		}
 
 		/// <summary>

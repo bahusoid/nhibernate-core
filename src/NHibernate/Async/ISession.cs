@@ -515,15 +515,6 @@ namespace NHibernate
 		Task RefreshAsync(object obj, LockMode lockMode, CancellationToken cancellationToken = default(CancellationToken));
 
 		/// <summary>
-		/// Create a new instance of <c>Query</c> for the given collection and filter string
-		/// </summary>
-		/// <param name="collection">A persistent collection</param>
-		/// <param name="queryString">A hibernate query</param>
-		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
-		/// <returns>A query</returns>
-		Task<IQuery> CreateFilterAsync(object collection, string queryString, CancellationToken cancellationToken = default(CancellationToken));
-
-		/// <summary>
 		/// Return the persistent instance of the given entity class with the given identifier, or null
 		/// if there is no such persistent instance. (If the instance, or a proxy for the instance, is
 		/// already associated with the session, return that instance or proxy.)

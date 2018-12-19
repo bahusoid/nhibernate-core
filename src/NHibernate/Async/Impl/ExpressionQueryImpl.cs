@@ -22,6 +22,7 @@ using NHibernate.Util;
 
 namespace NHibernate.Impl
 {
+	using System;
 	using System.Threading.Tasks;
 	using System.Threading;
 
@@ -41,6 +42,24 @@ namespace NHibernate.Impl
 			finally
 			{
 				After();
+			}
+		}
+
+		// Since v5.2
+		[Obsolete("This method has no usages and will be removed in a future version")]
+		protected internal override Task<IEnumerable<ITranslator>> GetTranslatorsAsync(ISessionImplementor session, QueryParameters queryParameters, CancellationToken cancellationToken)
+		{
+			if (cancellationToken.IsCancellationRequested)
+			{
+				return Task.FromCanceled<IEnumerable<ITranslator>>(cancellationToken);
+			}
+			try
+			{
+				return Task.FromResult<IEnumerable<ITranslator>>(GetTranslators(session, queryParameters));
+			}
+			catch (System.Exception ex)
+			{
+				return Task.FromException<IEnumerable<ITranslator>>(ex);
 			}
 		}
 	}

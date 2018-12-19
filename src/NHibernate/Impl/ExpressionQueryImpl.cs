@@ -125,6 +125,14 @@ namespace NHibernate.Impl
 			}
 		}
 
+		protected internal override IEnumerable<ITranslator> GetTranslators(ISessionImplementor session, QueryParameters queryParameters)
+		{
+			// NOTE: updates queryParameters.NamedParameters as (desired) side effect
+			var queryExpression = ExpandParameters(queryParameters.NamedParameters);
+
+			return CollectionFilterImpl.GetTranslators(session, queryParameters, queryExpression, collection);
+		}
+
 		public override IType[] TypeArray()
 		{
 			IList<IType> typeList = Types;

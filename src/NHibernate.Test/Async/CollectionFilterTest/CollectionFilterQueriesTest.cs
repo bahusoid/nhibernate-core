@@ -80,10 +80,10 @@ namespace NHibernate.Test.CollectionFilterTest
 			{
 				One one2 = (One)await (s.CreateQuery("from One").UniqueResultAsync());
 
-				Assert.ThrowsAsync<QuerySyntaxException>(async () =>
+				Assert.ThrowsAsync<QuerySyntaxException>(() =>
 				{
-					await ((await (s.CreateFilterAsync(one2.Manies, "update Many set X = 1")))
-						.ExecuteUpdateAsync());
+					return s.CreateFilter(one2.Manies, "update Many set X = 1")
+						.ExecuteUpdateAsync();
 					// Collection filtering disallows DML queries
 				});
 
@@ -99,10 +99,10 @@ namespace NHibernate.Test.CollectionFilterTest
 			{
 				One one2 = (One)await (s.CreateQuery("from One").UniqueResultAsync());
 
-				Assert.ThrowsAsync<QuerySyntaxException>(async () =>
+				Assert.ThrowsAsync<QuerySyntaxException>(() =>
 				{
-					await ((await (s.CreateFilterAsync(one2.Manies, "delete from Many")))
-						.ExecuteUpdateAsync());
+					return s.CreateFilter(one2.Manies, "delete from Many")
+						.ExecuteUpdateAsync();
 					// Collection filtering disallows DML queries
 				});
 
@@ -118,10 +118,10 @@ namespace NHibernate.Test.CollectionFilterTest
 			{
 				One one2 = (One)await (s.CreateQuery("from One").UniqueResultAsync());
 
-				Assert.ThrowsAsync<QuerySyntaxException>(async () =>
+				Assert.ThrowsAsync<QuerySyntaxException>(() =>
 				{
-					await ((await (s.CreateFilterAsync(one2.Manies, "insert into Many (X) select t0.X from Many t0")))
-						.ExecuteUpdateAsync());
+					return s.CreateFilter(one2.Manies, "insert into Many (X) select t0.X from Many t0")
+						.ExecuteUpdateAsync();
 					// Collection filtering disallows DML queries
 				});
 
@@ -137,7 +137,7 @@ namespace NHibernate.Test.CollectionFilterTest
 			{
 				One one2 = (One)await (s.CreateQuery("from One").UniqueResultAsync());
 
-				await ((await (s.CreateFilterAsync(one2.Manies, "where this.X in (select t0.X from Many t0)")))
+				await (s.CreateFilter(one2.Manies, "where this.X in (select t0.X from Many t0)")
 					.ListAsync());
 				// Filter should only affect outer query, not inner
 
@@ -153,10 +153,10 @@ namespace NHibernate.Test.CollectionFilterTest
 			{
 				One one2 = (One)await (s.CreateQuery("from One").UniqueResultAsync());
 
-				Assert.ThrowsAsync<QuerySyntaxException>(async () =>
+				Assert.ThrowsAsync<QuerySyntaxException>(() =>
 				{
-					await ((await (s.CreateFilterAsync(one2.Manies, "where this.X in (select X)")))
-						.ListAsync());
+					return s.CreateFilter(one2.Manies, "where this.X in (select X)")
+						.ListAsync();
 					// Inner query for filter query should have FROM clause 
 				});
 

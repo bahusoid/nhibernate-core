@@ -481,51 +481,51 @@ namespace NHibernate.Test.Legacy
 			Detail dd = (Detail) await (s.LoadAsync(typeof(Detail), did));
 			master = dd.Master;
 			Assert.IsTrue(master.Details.Contains(dd), "detail-master");
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master.Details, "order by this.I desc"))).ListAsync())).Count);
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master.Details, "select this where this.id > -1"))).ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master.Details, "order by this.I desc").ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master.Details, "select this where this.id > -1").ListAsync())).Count);
 
-			IQuery q = await (s.CreateFilterAsync(master.Details, "where this.id > :id"));
+			IQuery q = s.CreateFilter(master.Details, "where this.id > :id");
 			q.SetInt32("id", -1);
 			Assert.AreEqual(2, (await (q.ListAsync())).Count);
 
-			q = await (s.CreateFilterAsync(master.Details, "where this.id > :id1 and this.id < :id2"));
+			q = s.CreateFilter(master.Details, "where this.id > :id1 and this.id < :id2");
 			q.SetInt32("id1", -1);
 			q.SetInt32("id2", 99999999);
 			Assert.AreEqual(2, (await (q.ListAsync())).Count);
 			q.SetInt32("id2", -1);
 			Assert.AreEqual(0, (await (q.ListAsync())).Count);
 
-			q = await (s.CreateFilterAsync(master.Details, "where this.id in (:ids)"));
+			q = s.CreateFilter(master.Details, "where this.id in (:ids)");
 			q.SetParameterList("ids", new[] {did, (long) -1});
 
 			Assert.AreEqual(1, (await (q.ListAsync())).Count);
 			Assert.IsTrue((await (q.EnumerableAsync())).GetEnumerator().MoveNext());
 
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master.Details, "where this.id > -1"))).ListAsync())).Count);
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master.Details, "select this.Master where this.id > -1"))).ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master.Details, "where this.id > -1").ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master.Details, "select this.Master where this.id > -1").ListAsync())).Count);
 			Assert.AreEqual(2,
-			                (await ((await (s.CreateFilterAsync(master.Details, "select m from m in class Master where this.id > -1 and this.Master=m")))
+			                (await (s.CreateFilter(master.Details, "select m from m in class Master where this.id > -1 and this.Master=m")
 			                	.ListAsync())).Count);
-			Assert.AreEqual(0, (await ((await (s.CreateFilterAsync(master.Incoming, "where this.id > -1 and this.Name is not null"))).ListAsync())).Count);
+			Assert.AreEqual(0, (await (s.CreateFilter(master.Incoming, "where this.id > -1 and this.Name is not null").ListAsync())).Count);
 
-			IQuery filter = await (s.CreateFilterAsync(master.Details, "select max(this.I)"));
+			IQuery filter = s.CreateFilter(master.Details, "select max(this.I)");
 			enumer = (await (filter.EnumerableAsync())).GetEnumerator();
 			Assert.IsTrue(enumer.MoveNext());
 			Assert.IsTrue(enumer.Current is Int32);
 
-			filter = await (s.CreateFilterAsync(master.Details, "select max(this.I) group by this.id"));
+			filter = s.CreateFilter(master.Details, "select max(this.I) group by this.id");
 			enumer = (await (filter.EnumerableAsync())).GetEnumerator();
 			Assert.IsTrue(enumer.MoveNext());
 			Assert.IsTrue(enumer.Current is Int32);
 
-			filter = await (s.CreateFilterAsync(master.Details, "select count(*)"));
+			filter = s.CreateFilter(master.Details, "select count(*)");
 			enumer = (await (filter.EnumerableAsync())).GetEnumerator();
 			Assert.IsTrue(enumer.MoveNext());
 			Assert.IsTrue(enumer.Current is Int64);
 
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master.Details, "select this.Master"))).ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master.Details, "select this.Master").ListAsync())).Count);
 
-			IQuery f = await (s.CreateFilterAsync(master.Details, "select max(this.I) where this.I < :top and this.I>=:bottom"));
+			IQuery f = s.CreateFilter(master.Details, "select max(this.I) where this.I < :top and this.I>=:bottom");
 			f.SetInt32("top", 100);
 			f.SetInt32("bottom", 0);
 
@@ -538,7 +538,7 @@ namespace NHibernate.Test.Legacy
 			Assert.IsTrue(enumer.MoveNext());
 			Assert.AreEqual(0, enumer.Current);
 
-			f = await (s.CreateFilterAsync(master.Details, "select max(this.I) where this.I not in (:list)"));
+			f = s.CreateFilter(master.Details, "select max(this.I) where this.I not in (:list)");
 			f.SetParameterList("list", new List<int> {-666, 22, 0});
 			enumer = (await (f.EnumerableAsync())).GetEnumerator();
 			Assert.IsTrue(enumer.MoveNext());
@@ -576,7 +576,7 @@ namespace NHibernate.Test.Legacy
 			master3.AddOutgoing(master1);
 			object m1id = s.GetIdentifier(master1);
 
-			Assert.AreEqual(2, (await ((await (s.CreateFilterAsync(master1.Incoming, "where this.id > 0 and this.Name is not null"))).ListAsync())).Count);
+			Assert.AreEqual(2, (await (s.CreateFilter(master1.Incoming, "where this.id > 0 and this.Name is not null").ListAsync())).Count);
 			await (s.FlushAsync());
 			s.Close();
 

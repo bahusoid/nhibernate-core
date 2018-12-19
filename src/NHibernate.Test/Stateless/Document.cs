@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 
 namespace NHibernate.Test.Stateless
 {
@@ -33,5 +34,9 @@ namespace NHibernate.Test.Stateless
 			get { return lastModified; }
 			set { lastModified = value; }
 		}
+
+		public int Rating { get; set; }
+
+		public virtual IList<Document> References { get; set; } = new List<Document>();
 	}
 }

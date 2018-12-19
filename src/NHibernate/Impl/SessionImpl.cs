@@ -511,53 +511,6 @@ namespace NHibernate.Impl
 			List(queryExpression, queryParameters, results, null);
 		}
 
-		protected override void ListFilter(object collection, IQueryExpression queryExpression, QueryParameters queryParameters, IList results)
-		{
-			if (collection == null)
-				throw new ArgumentNullException(nameof(collection));
-			List(queryExpression, queryParameters, results, collection);
-		}
-
-		private void List(IQueryExpression queryExpression, QueryParameters queryParameters, IList results, object filterConnection)
-		{
-			using (BeginProcess())
-			{
-				queryParameters.ValidateParameters();
-
-				var isFilter = filterConnection != null;
-				var plan = isFilter
-					? GetFilterQueryPlan(filterConnection, queryExpression, queryParameters, false)
-					: GetHQLQueryPlan(queryExpression, false);
-
-				// GetFilterQueryPlan has already auto flushed or fully flush.
-				if (!isFilter)
-					AutoFlushIfRequired(plan.QuerySpaces);
-
-				bool success = false;
-				using (SuspendAutoFlush()) //stops flush being called multiple times if this method is recursively called
-				{
-					try
-					{
-						plan.PerformList(queryParameters, this, results);
-						success = true;
-					}
-					catch (HibernateException)
-					{
-						// Do not call Convert on HibernateExceptions
-						throw;
-					}
-					catch (Exception e)
-					{
-						throw Convert(e, "Could not execute query");
-					}
-					finally
-					{
-						AfterOperation(success);
-					}
-				}
-			}
-		}
-
 		// Since v5.2
 		[Obsolete("This method has no usages and will be removed in a future version")]
 		public override IQueryTranslator[] GetQueries(IQueryExpression query, bool scalar)
@@ -654,102 +607,6 @@ namespace NHibernate.Impl
 			{
 				FireLock(new LockEvent(entityName, obj, lockMode, this));
 			}
-		}
-
-		public IQuery CreateFilter(object collection, string queryString)
-		{
-			using (BeginProcess())
-			{
-				var plan = GetFilterQueryPlan(collection, queryString, null, false);
-				var filter = new CollectionFilterImpl(queryString, collection, this, plan.ParameterMetadata);
-				//filter.SetComment(queryString);
-				return filter;
-			}
-		}
-
-		public override IQuery CreateFilter(object collection, IQueryExpression queryExpression)
-		{
-			using (BeginProcess())
-			{
-				var plan = GetFilterQueryPlan(collection, queryExpression, null, false);
-				var filter = new ExpressionFilterImpl(plan.QueryExpression, collection, this, plan.ParameterMetadata);
-				return filter;
-			}
-		}
-
-		private IQueryExpressionPlan GetFilterQueryPlan(object collection, IQueryExpression queryExpression, QueryParameters parameters, bool shallow)
-		{
-			return GetFilterQueryPlan(collection, parameters, shallow, null, queryExpression);
-		}
-
-		private IQueryExpressionPlan GetFilterQueryPlan(object collection, string filter, QueryParameters parameters, bool shallow)
-		{
-			return GetFilterQueryPlan(collection, parameters, shallow, filter, null);
-		}
-
-		private IQueryExpressionPlan GetFilterQueryPlan(object collection, QueryParameters parameters, bool shallow,
-			string filter, IQueryExpression queryExpression)
-		{
-			if (collection == null)
-				throw new ArgumentNullException(nameof(collection), "null collection passed to filter");
-			if (filter != null && queryExpression != null)
-				throw new ArgumentException($"Either {nameof(filter)} or {nameof(queryExpression)} must be specified, not both.");
-			if (filter == null && queryExpression == null)
-				throw new ArgumentException($"{nameof(filter)} and {nameof(queryExpression)} were both null.");
-
-			var entry = persistenceContext.GetCollectionEntryOrNull(collection);
-			var roleBeforeFlush = entry?.LoadedPersister;
-
-			IQueryExpressionPlan plan;
-			if (roleBeforeFlush == null)
-			{
-				// if it was previously unreferenced, we need to flush in order to
-				// get its state into the database in order to execute query
-				Flush();
-				entry = persistenceContext.GetCollectionEntryOrNull(collection);
-				var roleAfterFlush = entry?.LoadedPersister;
-				if (roleAfterFlush == null)
-				{
-					throw new QueryException("The collection was unreferenced");
-				}
-				plan = GetFilterQueryPlan(roleAfterFlush.Role, shallow, filter, queryExpression);
-			}
-			else
-			{
-				// otherwise, we only need to flush if there are in-memory changes
-				// to the queried tables
-				plan = GetFilterQueryPlan(roleBeforeFlush.Role, shallow, filter, queryExpression);
-				if (AutoFlushIfRequired(plan.QuerySpaces))
-				{
-					// might need to run a different filter entirely after the flush
-					// because the collection role may have changed
-					entry = persistenceContext.GetCollectionEntryOrNull(collection);
-					var roleAfterFlush = entry?.LoadedPersister;
-					if (roleBeforeFlush != roleAfterFlush)
-					{
-						if (roleAfterFlush == null)
-						{
-							throw new QueryException("The collection was dereferenced");
-						}
-						plan = GetFilterQueryPlan(roleAfterFlush.Role, shallow, filter, queryExpression);
-					}
-				}
-			}
-
-			if (parameters != null)
-			{
-				parameters.PositionalParameterValues[0] = entry.LoadedKey;
-				parameters.PositionalParameterTypes[0] = entry.LoadedPersister.KeyType;
-			}
-
-			return plan;
-		}
-
-		private IQueryExpressionPlan GetFilterQueryPlan(string role, bool shallow, string filter, IQueryExpression queryExpression)
-		{
-			return filter == null
-				? Factory.QueryPlanCache.GetFilterQueryPlan(queryExpression, role, shallow, EnabledFilters)
-				: Factory.QueryPlanCache.GetFilterQueryPlan(filter, role, shallow, EnabledFilters);
 		}
 
 		public override object Instantiate(string clazz, object id)
@@ -862,7 +719,7 @@ namespace NHibernate.Impl
 		public bool AutoFlushSuspended => _suspendAutoFlushCount != 0;
 
 		/// <inheritdoc/>
-		public IDisposable SuspendAutoFlush()
+		public override IDisposable SuspendAutoFlush()
 		{
 			return new SuspendAutoFlushHelper(this);
 		}
@@ -1545,51 +1402,6 @@ namespace NHibernate.Impl
 		}
 
 		#endregion
-
-		private void Filter(object collection, string filter, QueryParameters queryParameters, IList results)
-		{
-			using (BeginProcess())
-			{
-				var plan = GetFilterQueryPlan(collection, filter, queryParameters, false);
-
-				bool success = false;
-				using (SuspendAutoFlush()) //stops flush being called multiple times if this method is recursively called
-				{
-					try
-					{
-						plan.PerformList(queryParameters, this, results);
-						success = true;
-					}
-					catch (HibernateException)
-					{
-						// Do not call Convert on HibernateExceptions
-						throw;
-					}
-					catch (Exception e)
-					{
-						throw Convert(e, "could not execute query");
-					}
-					finally
-					{
-						AfterOperation(success);
-					}
-				}
-			}
-		}
-
-		public override IList ListFilter(object collection, string filter, QueryParameters queryParameters)
-		{
-			var results = new List<object>();
-			Filter(collection, filter, queryParameters, results);
-			return results;
-		}
-
-		public override IList<T> ListFilter<T>(object collection, string filter, QueryParameters queryParameters)
-		{
-			List<T> results = new List<T>();
-			Filter(collection, filter, queryParameters, results);
-			return results;
-		}
 
 		public override IEnumerable EnumerableFilter(object collection, string filter, QueryParameters queryParameters)
 		{

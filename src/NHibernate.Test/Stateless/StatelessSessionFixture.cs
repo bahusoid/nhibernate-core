@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Linq;
 using System.Threading;
 using NHibernate.AdoNet;
 using NHibernate.Criterion;
@@ -227,6 +228,53 @@ namespace NHibernate.Test.Stateless
 			catch (SessionException)
 			{
 				Assert.Fail();
+			}
+		}
+
+		[Test]
+		public void CollectionFilter()
+		{
+			var dc = DetachedCriteria.For<Paper>();
+			using (IStatelessSession ss = Sfi.OpenStatelessSession())
+			{
+				ICriteria criteria = null;
+				Assert.That(() => criteria = dc.GetExecutableCriteria(ss), Throws.Nothing);
+				Assert.That(() => criteria.List(), Throws.Nothing);
+			}
+		}
+		[Test]
+		public void FutureOnFilter()
+		{
+			CreateDocuments();
+
+			using (IStatelessSession s = Sfi.OpenStatelessSession())
+			{
+				var person = s.Query<Document>().Where(n => n.Name == "DocTwoRefs").FirstOrDefault();
+
+				var r1 = s.CreateFilter(person.References, "where Rating > 30").List<Document>();
+				var r2 = s.CreateFilter(person.References, "where Rating > 5").List<Document>();
+
+				Assert.That(person.References.Count, Is.EqualTo(2), "invalid test set up");
+				Assert.That(r1.Count, Is.EqualTo(0), "Invalid filtered results");
+				Assert.That(r2.Count, Is.EqualTo(1), "Invalid filtered results");
+			}
+		}
+
+		protected void CreateDocuments()
+		{
+			using (var session = OpenSession())
+			using (var transaction = session.BeginTransaction())
+			{
+				var p = new Document { Name = "DocTwoRefs", Rating = 40 };
+				var c1 = new Document { Name = "Child1", Rating = 7 };
+				var c2 = new Document { Name = "Child2", Rating = 3 };
+				p.References.Add(c1);
+				p.References.Add(c2);
+
+				session.Save(p);
+				session.Save(c1);
+				session.Save(c2);
+				transaction.Commit();
 			}
 		}
 	}

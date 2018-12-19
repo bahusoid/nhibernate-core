@@ -156,7 +156,7 @@ namespace NHibernate.Test.NHSpecificTest.NH2319
 				var parent = await (session.GetAsync<Parent>(_parent1Id));
 				Assert.That(parent, Is.Not.Null);
 
-				var children = await ((await (session.CreateFilterAsync(parent.Children, "where this.Name = 'Jack'")))
+				var children = await (session.CreateFilter(parent.Children, "where this.Name = 'Jack'")
 					.ListAsync<Child>());
 
 				Assert.That(children, Has.Count.EqualTo(1));

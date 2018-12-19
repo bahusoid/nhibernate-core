@@ -85,11 +85,6 @@ namespace NHibernate.Impl
 			throw new SessionException("proxies cannot be fetched by a stateless session");
 		}
 
-		public override Task<IQuery> CreateFilterAsync(object collection, IQueryExpression queryExpression, CancellationToken cancellationToken)
-		{
-			throw new NotSupportedException();
-		}
-
 		public override async Task ListAsync(IQueryExpression queryExpression, QueryParameters queryParameters, IList results, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
@@ -172,21 +167,6 @@ namespace NHibernate.Impl
 		public override Task<IEnumerable<T>> EnumerableAsync<T>(IQueryExpression queryExpression, QueryParameters queryParameters, CancellationToken cancellationToken)
 		{
 			throw new NotImplementedException();
-		}
-
-		public override Task<IList> ListFilterAsync(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken)
-		{
-			throw new NotSupportedException();
-		}
-
-		protected override Task ListFilterAsync(object collection, IQueryExpression queryExpression, QueryParameters parameters, IList results, CancellationToken cancellationToken)
-		{
-			throw new NotSupportedException();
-		}
-
-		public override Task<IList<T>> ListFilterAsync<T>(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken)
-		{
-			throw new NotSupportedException();
 		}
 
 		public override Task<IEnumerable> EnumerableFilterAsync(object collection, string filter, QueryParameters parameters, CancellationToken cancellationToken)

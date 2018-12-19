@@ -22,6 +22,18 @@ namespace NHibernate
 		{
 			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(session, "query batch").CreateQueryBatch();
 		}
+
+		/// <summary>
+		/// Create a new instance of <c>Query</c> for the given collection and filter string
+		/// </summary>
+		/// <param name="session">The session</param>
+		/// <param name="collection">A persistent collection</param>
+		/// <param name="queryString">A hibernate query</param>
+		/// <returns>A query</returns>
+		public static IQuery CreateFilter(this IStatelessSession session, object collection, string queryString)
+		{
+			return ReflectHelper.CastOrThrow<AbstractSessionImpl>(session, "create collection filter").CreateFilter(collection, queryString);
+		}
 	}
 
 	/// <summary>
