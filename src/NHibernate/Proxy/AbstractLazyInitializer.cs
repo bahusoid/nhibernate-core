@@ -247,7 +247,7 @@ namespace NHibernate.Proxy
 		private static EntityKey GenerateEntityKeyOrNull(object id, ISessionImplementor s, string entityName)
 		{
 			if (id == null || s == null || entityName == null)
-				return null;
+				return EntityKey.Empty;
 
 			return s.GenerateEntityKey(id, s.Factory.GetEntityPersister(entityName));
 		}
@@ -266,7 +266,7 @@ namespace NHibernate.Proxy
 		private object GetProxyOrNull()
 		{
 			EntityKey entityKey = GenerateEntityKeyOrNull(_id, _session, _entityName);
-			if (entityKey != null && _session != null && _session.IsOpen)
+			if (entityKey.IsNotNull && _session != null && _session.IsOpen)
 			{
 				return _session.PersistenceContext.GetProxy(entityKey);
 			}
@@ -287,7 +287,7 @@ namespace NHibernate.Proxy
 			if (initialized)
 			{
 				EntityKey key = GenerateEntityKeyOrNull(_id, _session, _entityName);
-				if (key != null && _session.PersistenceContext.ContainsEntity(key))
+				if (key.IsNotNull && _session.PersistenceContext.ContainsEntity(key))
 				{
 					_session.PersistenceContext.SetReadOnly(_target, readOnly);
 				}

@@ -424,6 +424,24 @@ namespace NHibernate.Util
 			return buf.Append(NullSafeToString(array[len - 1])).ToString();
 		}
 
+		internal static string ToString<T>(T[] array)
+		{
+			int len = array.Length;
+
+			// if there is no value in the array then return no string...
+			if (len == 0)
+			{
+				return String.Empty;
+			}
+
+			StringBuilder buf = new StringBuilder(len * 12);
+			for (int i = 0; i < len - 1; i++)
+			{
+				buf.Append(NullSafeToString(array[i])).Append(CommaSpace);
+			}
+			return buf.Append(NullSafeToString(array[len - 1])).ToString();
+		}
+
 		public static string LinesToString(this string[] text)
 		{
 			if (text == null)

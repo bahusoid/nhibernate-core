@@ -12,8 +12,12 @@ namespace NHibernate.Engine
 	/// and the identifier space (eg. tablename)
 	/// </summary>
 	[Serializable]
-	public sealed class EntityKey : IDeserializationCallback, ISerializable, IEquatable<EntityKey>
+	public struct EntityKey : IDeserializationCallback, ISerializable, IEquatable<EntityKey>
 	{
+		public static EntityKey Empty { get; } = new EntityKey();
+		public bool IsNull => identifier == null;
+		public bool IsNotNull => !IsNull;
+
 		private readonly object identifier;
 		private readonly IEntityPersister _persister;
 		// hashcode may vary among processes, they cannot be stored and have to be re-computed after deserialization
@@ -25,6 +29,8 @@ namespace NHibernate.Engine
 		{
 			identifier = id ?? throw new AssertionFailure("null identifier");
 			_persister = persister;
+			_hashCode = null;
+
 			_hashCode = GenerateHashCode();
 		}
 
@@ -33,6 +39,8 @@ namespace NHibernate.Engine
 			identifier = info.GetValue(nameof(Identifier), typeof(object));
 			var factory = (ISessionFactoryImplementor) info.GetValue(nameof(_persister.Factory), typeof(ISessionFactoryImplementor));
 			var entityName = (string) info.GetValue(nameof(EntityName), typeof(string));
+			_hashCode = null;
+
 			_persister = factory.GetEntityPersister(entityName);
 		}
 
@@ -54,10 +62,8 @@ namespace NHibernate.Engine
 
 		public bool Equals(EntityKey other)
 		{
-			if (other == null)
-			{
-				return false;
-			}
+			if (other.IsNull)
+				return IsNull;
 
 			return
 				other.RootEntityName.Equals(RootEntityName)

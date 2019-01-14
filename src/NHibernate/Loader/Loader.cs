@@ -300,7 +300,7 @@ namespace NHibernate.Loader
 			try
 			{
 				result =
-					GetRowFromResultSet(resultSet, session, queryParameters, GetLockModes(queryParameters.LockModes), null,
+					GetRowFromResultSet(resultSet, session, queryParameters, GetLockModes(queryParameters.LockModes), EntityKey.Empty,
 										hydratedObjects, new EntityKey[entitySpan], returnProxies);
 			}
 			catch (HibernateException)
@@ -333,7 +333,7 @@ namespace NHibernate.Loader
 			}
 			else
 			{
-				return null;
+				return EntityKey.Empty;
 			}
 		}
 
@@ -377,7 +377,7 @@ namespace NHibernate.Loader
 				{
 					object entity = row[i];
 					var key = keys[i];
-					if (entity == null && key != null && IsChildFetchEntity(i))
+					if (entity == null && key.IsNotNull && IsChildFetchEntity(i))
 					{
 						// The entity was missing in the session, fallback on internal load (which will just yield a
 						// proxy if the persister supports it).
@@ -549,7 +549,7 @@ namespace NHibernate.Loader
 				for (int i = 0; i < keys.Count; i++)
 				{
 					EntityKey key = keys[i][j];
-					if (key != null)
+					if (key.IsNotNull)
 					{
 						result[j].Add(key);
 					}
@@ -569,7 +569,7 @@ namespace NHibernate.Loader
 				{
 					for (int i = 0; i < rowKeys.Length; i++)
 					{
-						if (rowKeys[i] != null && subSelects[i] != null)
+						if (rowKeys[i].IsNotNull && subSelects[i] != null)
 						{
 							session.PersistenceContext.BatchFetchQueue.AddSubselect(rowKeys[i], subSelects[i]);
 						}
@@ -759,7 +759,7 @@ namespace NHibernate.Loader
 					if (owner > -1)
 					{
 						EntityKey ownerKey = keys[owner];
-						if (keys[i] == null && ownerKey != null)
+						if (keys[i].IsNull && ownerKey.IsNull)
 						{
 							bool isOneToOneAssociation = ownerAssociationTypes != null && ownerAssociationTypes[i] != null
 														 && ownerAssociationTypes[i].IsOneToOne;
@@ -895,7 +895,7 @@ namespace NHibernate.Loader
 				}
 			}
 
-			return resultId == null ? null : session.GenerateEntityKey(resultId, persister);
+			return resultId == null ? EntityKey.Empty : session.GenerateEntityKey(resultId, persister);
 		}
 
 		/// <summary>
@@ -949,7 +949,7 @@ namespace NHibernate.Loader
 				object obj = null;
 				EntityKey key = keys[i];
 
-				if (key == null)
+				if (key.IsNull)
 				{
 					// do nothing
 					/* TODO NH-1001 : if (persisters[i]...EntityType) is an OneToMany or a ManyToOne and
@@ -1077,7 +1077,7 @@ namespace NHibernate.Loader
 
 			string instanceClass = GetInstanceClass(dr, i, persister, key.Identifier, session);
 
-			if (optionalObjectKey != null && key.Equals(optionalObjectKey))
+			if (optionalObjectKey.IsNotNull && key.Equals(optionalObjectKey))
 			{
 				// its the given optional object
 				obj = optionalObject;
