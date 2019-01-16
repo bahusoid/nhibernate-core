@@ -21,6 +21,8 @@ namespace NHibernate.Test.Criteria
 			set { bodyWeight = value; }
 		}
 
+		public virtual float BodyWeight2x { get { return BodyWeight * 2; } }
+
 		private ISet<Animal> offspring;
 
 		public virtual ISet<Animal> Offspring

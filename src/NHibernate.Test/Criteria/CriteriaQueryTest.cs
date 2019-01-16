@@ -2646,6 +2646,17 @@ namespace NHibernate.Test.Criteria
 		}
 
 		[Test]
+		public void PropertyWithQueryOnlyFormula()
+		{
+			using(var sqlLog = new SqlLogSpy())
+			using (ISession s = OpenSession())
+			{
+				var q = s.QueryOver<Animal>().Where(a => a.BodyWeight2x > 20);
+				q.List<Animal>();
+			}
+		}
+
+		[Test]
 		public void SqlExpressionWithParameters()
 		{
 			using (ISession session = OpenSession())

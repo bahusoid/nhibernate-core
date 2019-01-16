@@ -422,6 +422,8 @@ namespace NHibernate.Persister.Entity
 			List<string> formulaAliases = new List<string>();
 			List<string> formulaTemplates = new List<string>();
 			List<bool> formulasLazy = new List<bool>();
+			var formulasSkipFromSelect = new HashSet();
+
 			List<IType> types = new List<IType>();
 			List<string> names = new List<string>();
 			List<string> classes = new List<string>();
@@ -450,6 +452,7 @@ namespace NHibernate.Persister.Entity
 				int[] formnos = new int[prop.ColumnSpan];
 				int l = 0;
 				bool lazy = prop.IsLazy && lazyAvailable;
+				bool skipFromSelect = prop.SkipFromSelect;
 				foreach (ISelectable thing in prop.ColumnIterator)
 				{
 					if (thing.IsFormula)
@@ -462,6 +465,10 @@ namespace NHibernate.Persister.Entity
 						formulas.Add(thing.GetText(factory.Dialect));
 						formulaAliases.Add(thing.GetAlias(factory.Dialect));
 						formulasLazy.Add(lazy);
+						if(skipFromSelect)
+						{
+
+						}
 					}
 					else
 					{
@@ -1457,6 +1464,7 @@ namespace NHibernate.Persister.Entity
 			int[] columnTableNumbers = SubclassColumnTableNumberClosure;
 			string[] columnAliases = SubclassColumnAliasClosure;
 			string[] columns = SubclassColumnClosure;
+			
 
 			for (int i = 0; i < columns.Length; i++)
 			{

@@ -16,9 +16,9 @@
 
 		<property name="howHappyIsHe" formula="(case when (exists(select a.Id from Animal a where not(a.Id = Id))) then 'very' else 'not too much' end)"
 				update="false" insert="false"  />
-		
-		
-		<set name="offspring" order-by="father_id">
+		<property name="BodyWeight2x" formula="body_weight * 2" access="noop" type="float"/>
+
+	<set name="offspring" order-by="father_id">
 			<key column="mother_id"/>
 			<one-to-many class="Animal"/>
 		</set>
