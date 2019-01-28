@@ -36,9 +36,24 @@ namespace NHibernate.Loader
 			_selectMode = selectMode;
 		}
 
-		public OuterJoinableAssociation(IAssociationType joinableType, String lhsAlias, String[] lhsColumns, String rhsAlias,
+		public OuterJoinableAssociation(IAssociationType joinableType, String rhsAlias,
 										JoinType joinType, SqlString withClause, ISessionFactoryImplementor factory,
 										IDictionary<string, IFilter> enabledFilters)
+		{
+			this.joinableType = joinableType;
+			this.rhsAlias = rhsAlias;
+			this.joinType = joinType;
+			joinable = joinableType.GetAssociatedJoinable(factory);
+			rhsColumns = JoinHelper.GetRHSColumnNames(joinableType, factory);
+			on = new SqlString(joinableType.GetOnCondition(rhsAlias, factory, enabledFilters));
+			if (SqlStringHelper.IsNotEmpty(withClause))
+				on = on.Append(" and ( ").Append(withClause).Append(" )");
+			this.enabledFilters = enabledFilters; // needed later for many-to-many/filter application
+		}
+
+		public OuterJoinableAssociation(IAssociationType joinableType, String lhsAlias, String[] lhsColumns, String rhsAlias,
+								JoinType joinType, SqlString withClause, ISessionFactoryImplementor factory,
+								IDictionary<string, IFilter> enabledFilters)
 		{
 			this.joinableType = joinableType;
 			this.lhsAlias = lhsAlias;
@@ -53,11 +68,16 @@ namespace NHibernate.Loader
 			this.enabledFilters = enabledFilters; // needed later for many-to-many/filter application
 		}
 
+		public string Suffix { get; }
+
+		public  OuterJoinableAssociation Element { get; set; }
+
 		public JoinType JoinType
 		{
 			get { return joinType; }
 		}
 
+		//[Obsolete]
 		public string RHSAlias
 		{
 			get { return rhsAlias; }
@@ -89,6 +109,7 @@ namespace NHibernate.Loader
 			get { return joinableType; }
 		}
 
+		//[Obsolete]
 		public string RHSUniqueKeyName
 		{
 			get { return joinableType.RHSUniqueKeyPropertyName; }
@@ -145,7 +166,14 @@ namespace NHibernate.Loader
 
 		public void AddJoins(JoinFragment outerjoin)
 		{
-			outerjoin.AddJoin(joinable.TableName, rhsAlias, lhsColumns, rhsColumns, joinType, on);
+			if (IsRoot)
+			{
+				outerjoin.AddFromFragmentString(new SqlString(joinable.TableName + " " + rhsAlias));
+			}
+			else
+			{
+				outerjoin.AddJoin(joinable.TableName, rhsAlias, lhsColumns, rhsColumns, joinType, on);
+			}
 			outerjoin.AddJoins(joinable.FromJoinFragment(rhsAlias, false, true),
 							   joinable.WhereJoinFragment(rhsAlias, false, true));
 		}
@@ -170,19 +198,23 @@ namespace NHibernate.Loader
 			}
 			return false;
 		}
+		public bool IsRoot { get; set; }
 
 		public void AddManyToManyJoin(JoinFragment outerjoin, IQueryableCollection collection)
 		{
 			string manyToManyFilter = collection.GetManyToManyFilterFragment(rhsAlias, enabledFilters);
-			SqlString condition = string.Empty.Equals(manyToManyFilter)
+			SqlString condition = IsRoot
 								? on
-								: SqlStringHelper.IsEmpty(on) ? new SqlString(manyToManyFilter) : 
-									on.Append(" and ").Append(manyToManyFilter);
+								: SqlStringHelper.AddWithAnd(on, manyToManyFilter);
 
-			outerjoin.AddJoin(joinable.TableName, rhsAlias, lhsColumns, rhsColumns, joinType, condition);
+			//For many-to-many association we ignore provided joinType and use InnerJoin explicitly
+			outerjoin.AddJoin(joinable.TableName, rhsAlias, lhsColumns, rhsColumns, JoinType.InnerJoin, condition);
 			outerjoin.AddJoins(joinable.FromJoinFragment(rhsAlias, false, true),
-							   joinable.WhereJoinFragment(rhsAlias, false, true));
+							   SqlStringHelper.AddWithAnd(
+								   joinable.WhereJoinFragment(rhsAlias, false, true),
+								   IsRoot ? manyToManyFilter : null));
 		}
+		
 
 		internal bool ShouldFetchCollectionPersister()
 		{
@@ -204,6 +236,11 @@ namespace NHibernate.Loader
 			}
 
 			throw new ArgumentOutOfRangeException(nameof(SelectMode), SelectMode.ToString());
+		}
+
+		internal void AddManyToManyJoin(JoinFragment outerjoin, IQueryableCollection joinable, IDictionary<string, IFilter> enabledFilters)
+		{
+			throw new NotImplementedException();
 		}
 	}
 }

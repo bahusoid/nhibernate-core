@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Text;
@@ -175,20 +176,19 @@ namespace NHibernate.Engine
 				Join join = joins[i];
 				string on = join.AssociationType.GetOnCondition(join.Alias, factory, enabledFilters);
 				SqlString condition = new SqlString();
-				if (last != null &&
-						IsManyToManyRoot(last) &&
-						((IQueryableCollection)last).ElementType == join.AssociationType)
+				if (IsManyToManyRoot(last, out var lastCollection)
+					&& lastCollection.ElementType == join.AssociationType)
 				{
 					// the current join represents the join between a many-to-many association table
 					// and its "target" table.  Here we need to apply any additional filters
 					// defined specifically on the many-to-many
-					string manyToManyFilter = ((IQueryableCollection)last)
-						.GetManyToManyFilterFragment(join.Alias, enabledFilters);
+					string manyToManyFilter = lastCollection.GetManyToManyFilterFragment(join.Alias, enabledFilters);
 					condition = new SqlString("".Equals(manyToManyFilter)
 												? on
 												: "".Equals(on)
 														? manyToManyFilter
 														: on + " and " + manyToManyFilter);
+					_manyToManyJoins[lastCollection] = join;
 				}
 				else
 				{
@@ -196,8 +196,8 @@ namespace NHibernate.Engine
 					// Apply filters in Many-To-One association
 					var enabledForManyToOne = FilterHelper.GetEnabledForManyToOne(enabledFilters);
 					condition = new SqlString(string.IsNullOrEmpty(on) && enabledForManyToOne.Count > 0
-					            	? join.Joinable.FilterFragment(join.Alias, enabledForManyToOne)
-					            	: on);
+									? join.Joinable.FilterFragment(join.Alias, enabledForManyToOne)
+									: on);
 				}
 
 				if (withClauseFragment != null)
@@ -234,13 +234,23 @@ namespace NHibernate.Engine
 			return joinFragment;
 		}
 
-		private bool IsManyToManyRoot(IJoinable joinable)
+		Dictionary<IQueryableCollection, Join> _manyToManyJoins = new Dictionary<IQueryableCollection, Join>();
+		internal string RenderCollectionSelectFragment(IQueryableCollection queryableCollection, string collectionTableAlias, string collectionSuffix)
+		{
+			if (!queryableCollection.IsManyToMany || !_manyToManyJoins.TryGetValue(queryableCollection, out Join join) || !(queryableCollection is ISupportSelectModeJoinable joinable))
+				return queryableCollection.SelectFragment(collectionTableAlias, collectionSuffix);
+
+			return joinable.SelectFragment(join.Joinable, join.Alias, collectionTableAlias, null, collectionSuffix, true, false);
+		}
+
+		private bool IsManyToManyRoot(IJoinable joinable, out IQueryableCollection collection)
 		{
 			if (joinable != null && joinable.IsCollection)
 			{
-				IQueryableCollection persister = (IQueryableCollection) joinable;
-				return persister.IsManyToMany;
+				collection = (IQueryableCollection) joinable;
+				return collection.IsManyToMany;
 			}
+			collection = null;
 			return false;
 		}
 

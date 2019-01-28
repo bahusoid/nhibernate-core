@@ -423,7 +423,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 				// Add the second join, the one that ends in the destination table.
 				JoinSequence joinSequence = CreateJoinSequence(roleAlias, joinType);
-				joinSequence.AddJoin(sfh.GetElementAssociationType(_collectionType), tableAlias, joinType, secondJoinColumns);
+				joinSequence.AddJoin(sfh.GetElementAssociationType(_collectionType), tableAlias, JoinType.InnerJoin, secondJoinColumns);
 				elem = CreateJoin(associatedEntityName, tableAlias, joinSequence, type, false);
 				elem.UseFromFragment = true;
 			}

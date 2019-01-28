@@ -41,6 +41,14 @@ namespace NHibernate.SqlCommand
 			return result;
 		}
 
+		internal static SqlString AddWithAnd(SqlString s, string condition)
+		{
+			if (string.IsNullOrEmpty(condition))
+				return s;
+
+			return SqlStringHelper.IsEmpty(s) ? new SqlString(condition) :
+									s.Append(" and ").Append(condition);
+		}
 
 		public static SqlString RemoveAsAliasesFromSql(SqlString sql)
 		{

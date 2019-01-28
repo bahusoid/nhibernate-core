@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text.RegularExpressions;
 using NHibernate.Collection;
 using NHibernate.Engine;
@@ -796,7 +797,7 @@ namespace NHibernate.Loader
 		/// <summary>
 		/// Generate a sequence of <c>LEFT OUTER JOIN</c> clauses for the given associations.
 		/// </summary>
-		protected JoinFragment MergeOuterJoins(IList<OuterJoinableAssociation> associations)
+		protected JoinFragment MergeOuterJoins(IList<OuterJoinableAssociation> associations, OuterJoinableAssociation rootAssociation)
 		{
 			IList<OuterJoinableAssociation> sortedAssociations = new List<OuterJoinableAssociation>();
 
@@ -809,7 +810,7 @@ namespace NHibernate.Loader
 			JoinFragment outerjoin = Dialect.CreateOuterJoinFragment();
 
 			OuterJoinableAssociation last = null;
-			foreach (OuterJoinableAssociation oj in sortedAssociations)
+			foreach (OuterJoinableAssociation oj in new[] { rootAssociation }.Concat(sortedAssociations))
 			{
 				if (last != null && last.IsManyToManyWith(oj))
 				{
@@ -843,6 +844,7 @@ namespace NHibernate.Loader
 		/// Count the number of instances of IJoinable which are actually
 		/// also instances of ILoadable, or are one-to-many associations
 		/// </summary>
+		//[Obsolete("This method has no usage")]
 		protected static int CountEntityPersisters(IList<OuterJoinableAssociation> associations)
 		{
 			int result = 0;
@@ -873,9 +875,31 @@ namespace NHibernate.Loader
 		}
 
 		/// <summary>
+		/// Count the number of instances of <see cref="IJoinable" /> which
+		/// are actually also instances of <see cref="IPersistentCollection" />
+		/// which are being fetched by outer join
+		/// </summary>
+		protected void GenerateSuffixes(IList<OuterJoinableAssociation> associations)
+		{
+			int col = 0;
+			int entity = 0;
+			
+			foreach (OuterJoinableAssociation oj in associations)
+			{
+				if (oj.ShouldFetchCollectionPersister())
+					col++;
+
+				if (oj.Joinable.ConsumesEntityAlias() && oj.SelectMode != SelectMode.JoinOnly)
+					entity++;
+			}
+			Suffixes = BasicLoader.GenerateSuffixes(entity + 1);
+			CollectionSuffixes = BasicLoader.GenerateSuffixes(col + 1);
+		}
+
+		/// <summary>
 		/// Get the order by string required for collection fetching
 		/// </summary>
-		protected SqlString OrderBy(IList<OuterJoinableAssociation> associations)
+		protected SqlString OrderBy(IList<OuterJoinableAssociation> associations, OuterJoinableAssociation rootAssociation)
 		{
 			SqlStringBuilder buf = new SqlStringBuilder();
 
@@ -976,12 +1000,14 @@ namespace NHibernate.Loader
 
 		protected void InitPersisters(IList<OuterJoinableAssociation> associations, LockMode lockMode)
 		{
+			//TODO: Implement with root association in mind
 			int joins = CountEntityPersisters(associations);
 			int collections = CountCollectionPersisters(associations);
 
 			collectionOwners = collections == 0 ? null : new int[collections];
 			collectionPersisters = collections == 0 ? null : new ICollectionPersister[collections];
 			collectionSuffixes = BasicLoader.GenerateSuffixes(joins + 1, collections);
+			suffixes = BasicLoader.GenerateSuffixes(joins);
 
 			persisters = new ILoadable[joins];
 			EagerPropertyFetches = new bool[joins];

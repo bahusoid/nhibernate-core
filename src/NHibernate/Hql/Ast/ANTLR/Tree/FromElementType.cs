@@ -217,7 +217,8 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 			if (_collectionSuffix == null)
 				_collectionSuffix = GenerateSuffix(size, k);
-
+			//TODO: SELECT 
+			_joinSequence.RenderCollectionSelectFragment(_queryableCollection, CollectionTableAlias, _collectionSuffix);
 			string fragment = _queryableCollection.SelectFragment(CollectionTableAlias, _collectionSuffix);
 			return TrimLeadingCommaAndSpaces(fragment);
 		}

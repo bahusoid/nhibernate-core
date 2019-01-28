@@ -22,7 +22,7 @@
 
 	<union-subclass name="Document" table="Document" lazy="true" extends="Base">
 
-		<set name="Assets" table="asset_to_document" lazy="true" cascade="all-delete-orphan">
+		<set name="Assets" table="asset_to_document" lazy="true" cascade="all-delete-orphan" order-by="IsDeleted asc">
 			<key column="DocumentId"/>
 			<many-to-many class="Asset" column="AssetId"/>
 		</set>

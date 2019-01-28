@@ -52,6 +52,7 @@ namespace NHibernate.Loader.Collection
 
 		private void InitStatementString(IOuterJoinLoadable elementPersister, string alias, int batchSize, SqlString subquery)
 		{
+			GenerateSuffixes(associations);
 			int joins = CountEntityPersisters(associations);
 			Suffixes = BasicLoader.GenerateSuffixes(joins + 1);
 
@@ -67,7 +68,7 @@ namespace NHibernate.Loader.Collection
 				new SqlSelectBuilder(Factory)
 					.SetSelectClause(
 #pragma warning disable 618
-						oneToManyPersister.SelectFragment(null, null, alias, Suffixes[joins], CollectionSuffixes[0], true) +
+						oneToManyPersister.SelectFragment(null, null, alias, Suffixes[Suffixes.Length - 1], CollectionSuffixes[0], true) +
 #pragma warning restore 618
 						SelectString(associations))
 					.SetFromClause(
