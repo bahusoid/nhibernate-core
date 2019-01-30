@@ -879,33 +879,32 @@ namespace NHibernate.Loader
 		{
 			SqlStringBuilder buf = new SqlStringBuilder();
 
-			OuterJoinableAssociation last = null;
+			OuterJoinableAssociation lastManyToManyOrdered = null;
+			IQueryableCollection queryableCollection = null;
 			foreach (OuterJoinableAssociation oj in associations)
 			{
 				if (oj.ShouldFetchCollectionPersister())
 				{
-					IQueryableCollection queryableCollection = (IQueryableCollection) oj.Joinable;
+					queryableCollection = (IQueryableCollection) oj.Joinable;
 					if (queryableCollection.HasOrdering)
 					{
 						string orderByString = queryableCollection.GetSQLOrderByString(oj.RHSAlias);
 						buf.Add(orderByString).Add(StringHelper.CommaSpace);
 					}
+					if(queryableCollection.HasManyToManyOrdering)
+						lastManyToManyOrdered = oj;
 				}
-				else if (!oj.IsCollection && last?.ShouldFetchCollectionPersister() == true)
+				else if (lastManyToManyOrdered != null)
 				{
 					// it might still need to apply a collection ordering based on a
 					// many-to-many defined order-by...
-					IQueryableCollection queryableCollection = (IQueryableCollection) last.Joinable;
-					if (queryableCollection.IsManyToMany && last.IsManyToManyWith(oj))
+					if (lastManyToManyOrdered.IsManyToManyWith(oj))
 					{
-						if (queryableCollection.HasManyToManyOrdering)
-						{
-							string orderByString = queryableCollection.GetManyToManyOrderByString(oj.RHSAlias);
-							buf.Add(orderByString).Add(StringHelper.CommaSpace);
-						}
+						string orderByString = queryableCollection.GetManyToManyOrderByString(oj.RHSAlias);
+						buf.Add(orderByString).Add(StringHelper.CommaSpace);
 					}
+					lastManyToManyOrdered = null;
 				}
-				last = oj;
 			}
 
 			if (buf.Count > 0) {
