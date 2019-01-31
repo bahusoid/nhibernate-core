@@ -358,7 +358,7 @@ namespace NHibernate.Impl
 		/// </returns>
 		public IDisposable BeginProcess()
 		{
-			return _processHelper.BeginProcess(this);
+			return (_processHelper ?? (_processHelper = new ProcessHelper())).BeginProcess(this);
 		}
 
 		/// <summary>
@@ -370,18 +370,16 @@ namespace NHibernate.Impl
 		/// </returns>
 		public IDisposable BeginContext()
 		{
-			return _processHelper.Processing ? null : SessionIdLoggingContext.CreateOrNull(SessionId);
+			return _processHelper?.Processing == true ? null : SessionIdLoggingContext.CreateOrNull(SessionId);
 		}
 
-		private ProcessHelper _processHelper = new ProcessHelper();
+		[NonSerialized]
+		private ProcessHelper _processHelper;
 
-		[Serializable]
 		private sealed class ProcessHelper : IDisposable
 		{
-			[NonSerialized]
 			private IDisposable _context;
 
-			[NonSerialized]
 			private bool _processing;
 
 			public ProcessHelper()
@@ -419,7 +417,7 @@ namespace NHibernate.Impl
 
 		protected internal virtual void CheckAndUpdateSessionStatus()
 		{
-			if (_processHelper.Processing)
+			if (_processHelper?.Processing == true)
 				return;
 
 			ErrorIfClosed();
