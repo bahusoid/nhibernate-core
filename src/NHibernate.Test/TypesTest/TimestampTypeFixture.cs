@@ -1,4 +1,5 @@
 using System;
+using System.Runtime.InteropServices;
 using NHibernate.Type;
 using NUnit.Framework;
 
@@ -14,6 +15,7 @@ namespace NHibernate.Test.TypesTest
 		[Test]
 		public void ObsoleteMessage()
 		{
+			var serializableType = Marshal.SizeOf(typeof(SerializableType));
 			using (var spy = new LogSpy(typeof(TypeFactory)))
 			{
 				var config = TestConfigurationHelper.GetDefaultConfiguration();

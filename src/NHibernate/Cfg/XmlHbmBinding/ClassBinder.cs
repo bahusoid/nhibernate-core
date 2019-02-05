@@ -45,8 +45,6 @@ namespace NHibernate.Cfg.XmlHbmBinding
 			// transfer an explicitly defined entity name
 			string entityName = classMapping.EntityName ??
 								ClassForNameChecked(classMapping.Name, mappings, "persistent class {0} not found").FullName;
-			if (entityName == null)
-				throw new MappingException("Unable to determine entity name");
 			model.EntityName = entityName;
 
 			BindPocoRepresentation(classMapping, model);

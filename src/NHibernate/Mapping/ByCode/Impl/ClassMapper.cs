@@ -26,6 +26,7 @@ namespace NHibernate.Mapping.ByCode.Impl
 			classMapping = new HbmClass();
 			var toAdd = new[] {classMapping};
 			classMapping.name = rootClass.GetShortClassName(mapDoc);
+			classMapping.TypeClass = rootClass;
 			if (rootClass.IsAbstract)
 			{
 				classMapping.@abstract = true;

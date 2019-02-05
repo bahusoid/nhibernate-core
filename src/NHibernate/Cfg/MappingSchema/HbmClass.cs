@@ -5,7 +5,7 @@ using System.Xml.Serialization;
 
 namespace NHibernate.Cfg.MappingSchema
 {
-	partial class HbmClass : AbstractDecoratable, IEntityMapping, IEntityDiscriminableMapping
+	partial class HbmClass : AbstractDecoratable, IEntityMapping, IEntityDiscriminableMapping, IEntityMappingByCode
 	{
 		public HbmId Id
 		{
@@ -122,7 +122,6 @@ namespace NHibernate.Cfg.MappingSchema
 		{
 			get { return synchronize ?? Array.Empty<HbmSynchronize>(); }
 		}
-
 		#endregion
 
 		#region Implementation of IEntityDiscriminableMapping
@@ -175,5 +174,7 @@ namespace NHibernate.Cfg.MappingSchema
 		}
 
 		#endregion
+
+		public System.Type MappedType { get; set; }
 	}
 }

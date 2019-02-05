@@ -5,7 +5,7 @@ using System.Xml.Serialization;
 
 namespace NHibernate.Cfg.MappingSchema
 {
-	public partial class HbmSubclass : AbstractDecoratable, IEntityMapping, IEntityDiscriminableMapping
+	public partial class HbmSubclass : AbstractDecoratable, IEntityMapping, IEntityDiscriminableMapping, IEntityMappingByCode
 	{
 		[XmlIgnore]
 		public IEnumerable<HbmJoin> Joins
@@ -144,5 +144,7 @@ namespace NHibernate.Cfg.MappingSchema
 		}
 
 		#endregion
+
+		public System.Type MappedType { get; set; }
 	}
 }

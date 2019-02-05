@@ -5,7 +5,7 @@ using System.Xml.Serialization;
 
 namespace NHibernate.Cfg.MappingSchema
 {
-	public partial class HbmUnionSubclass : AbstractDecoratable, IEntityMapping
+	public partial class HbmUnionSubclass : AbstractDecoratable, IEntityMapping, IEntityMappingByCode
 	{
 		[XmlIgnore]
 		public IEnumerable<HbmUnionSubclass> UnionSubclasses
@@ -132,5 +132,7 @@ namespace NHibernate.Cfg.MappingSchema
 		}
 
 		#endregion
+
+		public System.Type MappedType { get; set; }
 	}
 }
