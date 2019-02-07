@@ -211,6 +211,11 @@ namespace NHibernate.SqlCommand
 		/// <summary></summary>
 		public SqlString ToSqlString()
 		{
+			return ToSqlStringBuilder().ToSqlString();
+		}
+
+		internal SqlStringBuilder ToSqlStringBuilder()
+		{
 			// 4 = the "SELECT", selectClause, "FROM", fromClause are straight strings
 			// plus the number of parts in outerJoinsAfterFrom SqlString.
 			// 1 = the "WHERE" 
@@ -263,7 +268,7 @@ namespace NHibernate.SqlCommand
 					.Add(groupByClause);
 			}
 
-			if(SqlStringHelper.IsNotEmpty(havingClause))
+			if (SqlStringHelper.IsNotEmpty(havingClause))
 			{
 				sqlBuilder.Add(" HAVING ")
 					.Add(havingClause);
@@ -285,20 +290,20 @@ namespace NHibernate.SqlCommand
 				if (initialCapacity < sqlBuilder.Count)
 				{
 					log.Debug("The initial capacity was set too low at: {0} for the SelectSqlBuilder that needed a capacity of: {1} for the table {2}",
-					          initialCapacity,
-					          sqlBuilder.Count,
-					          fromClause);
+							  initialCapacity,
+							  sqlBuilder.Count,
+							  fromClause);
 				}
 				else if (initialCapacity > 16 && ((float) initialCapacity / sqlBuilder.Count) > 1.2)
 				{
 					log.Debug("The initial capacity was set too high at: {0} for the SelectSqlBuilder that needed a capacity of: {1} for the table {2}",
-					          initialCapacity,
-					          sqlBuilder.Count,
-					          fromClause);
+							  initialCapacity,
+							  sqlBuilder.Count,
+							  fromClause);
 				}
 			}
 
-			return sqlBuilder.ToSqlString();
+			return sqlBuilder;
 		}
 
 		private string GetForUpdateString()

@@ -17,6 +17,7 @@ namespace NHibernate.SqlCommand
 
 		private string tableName;
 		private string comment;
+		private SqlString _fromSql;
 
 		// columns-> (ColumnName, Value) or (ColumnName, SqlType) for parametrized column
 		private readonly LinkedHashMap<string, object> columns = new LinkedHashMap<string, object>();
@@ -31,6 +32,12 @@ namespace NHibernate.SqlCommand
 		public SqlUpdateBuilder SetTableName(string tableName)
 		{
 			this.tableName = tableName;
+			return this;
+		}
+
+		public SqlUpdateBuilder SetFromUpdate(SqlString fromSql)
+		{
+			_fromSql = fromSql;
 			return this;
 		}
 
@@ -321,18 +328,23 @@ namespace NHibernate.SqlCommand
 				sqlBuilder.Add(assignments);
 			}
 
-
-			sqlBuilder.Add(" WHERE ");
-			bool andNeeded = false;
-			foreach (SqlString whereString in whereStrings)
+			if (_fromSql == null)
 			{
-				if (andNeeded)
-					sqlBuilder.Add(" AND ");
-				andNeeded = true;
+				sqlBuilder.Add(" WHERE ");
+				bool andNeeded = false;
+				foreach (SqlString whereString in whereStrings)
+				{
+					if (andNeeded)
+						sqlBuilder.Add(" AND ");
+					andNeeded = true;
 
-				sqlBuilder.Add(whereString);
+					sqlBuilder.Add(whereString);
+				}
 			}
-
+			else
+			{
+				sqlBuilder.Add(_fromSql);
+			}
 			if (log.IsDebugEnabled())
 			{
 				if (initialCapacity < sqlBuilder.Count)

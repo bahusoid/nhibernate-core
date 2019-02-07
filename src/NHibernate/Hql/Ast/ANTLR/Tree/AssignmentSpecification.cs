@@ -90,6 +90,11 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			return _tableNames.Contains(tableName);
 		}
 
+		internal ISet<string> TableNames
+		{
+			get { return _tableNames; }
+		}
+
 		private static bool IsParam(IASTNode node)
 		{
 			return node.Type == HqlSqlWalker.PARAM || node.Type == HqlSqlWalker.NAMED_PARAM;

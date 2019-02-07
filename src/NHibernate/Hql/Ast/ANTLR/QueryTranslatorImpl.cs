@@ -90,7 +90,7 @@ namespace NHibernate.Hql.Ast.ANTLR
 			var query = ( QueryNode ) _sqlAst;
 			bool hasLimit = queryParameters.RowSelection != null && queryParameters.RowSelection.DefinesLimits;
 			bool needsDistincting = ( query.GetSelectClause().IsDistinct || hasLimit ) && ContainsCollectionFetches;
-
+			
 			QueryParameters queryParametersToUse;
 
 			if ( hasLimit && ContainsCollectionFetches ) 
@@ -410,7 +410,9 @@ namespace NHibernate.Hql.Ast.ANTLR
 			{
 				FromElement fromElement = walker.GetFinalFromClause().GetFromElement();
 				IQueryable persister = fromElement.Queryable;
-				if (persister.IsMultiTable)
+				if (persister.IsMultiTable 
+					&& walker.AssignmentSpecifications.Select(s => s.TableNames).SelectMany(t => t).Distinct().Take(2).Count() > 1
+					)
 				{
 					// even here, if only properties mapped to the "base table" are referenced
 					// in the set and where clauses, this could be handled by the BasicDelegate.

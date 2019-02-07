@@ -20,9 +20,11 @@ namespace NHibernate.Hql.Ast.ANTLR.Exec
 	{
 		private static readonly INHibernateLogger log = NHibernateLogger.For(typeof (MultiTableDeleteExecutor));
 		private readonly IQueryable persister;
-		private readonly SqlString idInsertSelect;
-		private readonly SqlString[] updates;
+		private readonly SqlString update;
+		private readonly SqlString fromStatement;
 		private readonly IParameterSpecification[][] hqlParameters;
+		private readonly IParameterSpecification[] singleHqlParameters;
+
 
 		public MultiTableUpdateExecutor(IStatement statement) : base(statement, log)
 		{
@@ -36,90 +38,73 @@ namespace NHibernate.Hql.Ast.ANTLR.Exec
 			string bulkTargetAlias = fromElement.TableAlias;
 			persister = fromElement.Queryable;
 
-			idInsertSelect = GenerateIdInsertSelect(persister, bulkTargetAlias, updateStatement.WhereClause);
-			log.Debug("Generated ID-INSERT-SELECT SQL (multi-table update) : {0}", idInsertSelect);
+			var fromStatement  = GenerateFromForUpdateStatement(persister, bulkTargetAlias, updateStatement.WhereClause);
 
 			string[] tableNames = persister.ConstraintOrderedTableNameClosure;
 			string[][] columnNames = persister.ConstraintOrderedTableKeyColumnClosure;
 
-			string idSubselect = GenerateIdSubselect(persister);
+			//string idSubselect = GenerateIdSubselect(persister);
 			IList<AssignmentSpecification> assignmentSpecifications = Walker.AssignmentSpecifications;
 
-			updates = new SqlString[tableNames.Length];
 			hqlParameters = new IParameterSpecification[tableNames.Length][];
-			for (int tableIndex = 0; tableIndex < tableNames.Length; tableIndex++)
-			{
-				bool affected = false;
-				var parameterList = new List<IParameterSpecification>();
-				SqlUpdateBuilder update =
-					new SqlUpdateBuilder(Factory.Dialect, Factory).SetTableName(tableNames[tableIndex])
-					.SetWhere(
-						string.Format("({0}) IN ({1})", StringHelper.Join(", ", columnNames[tableIndex]), idSubselect));
+			SqlUpdateBuilder update =
+	new SqlUpdateBuilder(Factory.Dialect, Factory).SetTableName(bulkTargetAlias)
+	.SetFromUpdate(fromStatement);
 
-				if (Factory.Settings.IsCommentsEnabled)
-				{
-					update.SetComment("bulk update");
-				}
+			if (Factory.Settings.IsCommentsEnabled)
+			{
+				update.SetComment("bulk update");
+			}
+			var parameterList = new List<IParameterSpecification>();
+			{
 				foreach (var specification in assignmentSpecifications)
 				{
-					if (specification.AffectsTable(tableNames[tableIndex]))
+					update.AppendAssignmentFragment(specification.SqlAssignmentFragment);
+					if (specification.Parameters != null)
 					{
-						affected = true;
-						update.AppendAssignmentFragment(specification.SqlAssignmentFragment);
-						if (specification.Parameters != null)
+						for (int paramIndex = 0; paramIndex < specification.Parameters.Length; paramIndex++)
 						{
-							for (int paramIndex = 0; paramIndex < specification.Parameters.Length; paramIndex++)
-							{
-								parameterList.Add(specification.Parameters[paramIndex]);
-							}
+							parameterList.Add(specification.Parameters[paramIndex]);
 						}
 					}
 				}
-				if (affected)
-				{
-					updates[tableIndex] = update.ToSqlString();
-					hqlParameters[tableIndex] = parameterList.ToArray();
-				}
+				this.singleHqlParameters = parameterList.ToArray();
+				
 			}
+			this.update = update.ToSqlString();
+			this.fromStatement = fromStatement;
+
 		}
 
 		public override SqlString[] SqlStatements
 		{
-			get { return updates; }
+			get { return new[] { update }; }
 		}
 
 		public override int Execute(QueryParameters parameters, ISessionImplementor session)
 		{
 			CoordinateSharedCacheCleanup(session);
-
-			CreateTemporaryTableIfNecessary(persister, session);
-
-			try
 			{
 				// First, save off the pertinent ids, as the return value
 				DbCommand ps = null;
-				int resultCount;
+				int resultCount = 0;
+				// Start performing the updates
 				try
 				{
 					try
 					{
-						int parameterStart = Walker.NumberOfParametersInSetClause;
-
 						IList<IParameterSpecification> allParams = Walker.Parameters;
-
-						List<IParameterSpecification> whereParams = (new List<IParameterSpecification>(allParams)).GetRange(
-							parameterStart, allParams.Count - parameterStart);
-
-						var sqlString = FilterHelper.ExpandDynamicFilterParameters(idInsertSelect, whereParams, session);
-						var sqlQueryParametersList = sqlString.GetParameters().ToList();
-						SqlType[] parameterTypes = whereParams.GetQueryParameterTypes(sqlQueryParametersList, session.Factory);
-
+						var sqlString = FilterHelper.ExpandDynamicFilterParameters(update, allParams, session);
+						var sqlQueryParametersList = update.GetParameters()
+							//.Concat(fromStatement.GetParameters())
+							.ToList();
+						SqlType[] parameterTypes = allParams.GetQueryParameterTypes(sqlQueryParametersList, session.Factory);
 						ps = session.Batcher.PrepareCommand(CommandType.Text, sqlString, parameterTypes);
-						foreach (var parameterSpecification in whereParams)
+						foreach (var parameterSpecification in allParams)
 						{
 							parameterSpecification.Bind(ps, sqlQueryParametersList, parameters, session);
 						}
-
+						
 						resultCount = session.Batcher.ExecuteNonQuery(ps);
 					}
 					finally
@@ -132,53 +117,12 @@ namespace NHibernate.Hql.Ast.ANTLR.Exec
 				}
 				catch (DbException e)
 				{
-					throw ADOExceptionHelper.Convert(Factory.SQLExceptionConverter, e, "could not insert/select ids for bulk update",
-					                                 idInsertSelect);
-				}
-
-				// Start performing the updates
-				for (int i = 0; i < updates.Length; i++)
-				{
-					if (updates[i] == null)
-					{
-						continue;
-					}
-					try
-					{
-						try
-						{
-							var sqlQueryParametersList = updates[i].GetParameters().ToList();
-							var paramsSpec = hqlParameters[i];
-							SqlType[] parameterTypes = paramsSpec.GetQueryParameterTypes(sqlQueryParametersList, session.Factory);
-
-							ps = session.Batcher.PrepareCommand(CommandType.Text, updates[i], parameterTypes);
-							foreach (var parameterSpecification in paramsSpec)
-							{
-								parameterSpecification.Bind(ps, sqlQueryParametersList, parameters, session);
-							}
-
-							session.Batcher.ExecuteNonQuery(ps);
-						}
-						finally
-						{
-							if (ps != null)
-							{
-								session.Batcher.CloseCommand(ps, null);
-							}
-						}
-					}
-					catch (DbException e)
-					{
-						throw ADOExceptionHelper.Convert(Factory.SQLExceptionConverter, e, "error performing bulk update", updates[i]);
-					}
+					throw ADOExceptionHelper.Convert(Factory.SQLExceptionConverter, e, "error performing bulk update", update);
 				}
 
 				return resultCount;
 			}
-			finally
-			{
-				DropTemporaryTableIfNecessary(persister, session);
-			}
+
 		}
 
 		protected override IQueryable[] AffectedQueryables

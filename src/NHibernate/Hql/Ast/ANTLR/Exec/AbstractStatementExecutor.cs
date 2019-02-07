@@ -123,6 +123,49 @@ namespace NHibernate.Hql.Ast.ANTLR.Exec
 			return insert.ToSqlString();
 		}
 
+		protected SqlString GenerateFromForUpdateStatement(IQueryable persister, string tableAlias, IASTNode whereClause)
+		{
+			var select = new SqlSelectBuilder(Factory);
+			//SelectFragment selectFragment = new SelectFragment(Factory.Dialect)
+			//	.AddColumns(tableAlias, persister.IdentifierColumnNames, persister.IdentifierColumnNames);
+			//select.SetSelectClause(selectFragment.ToFragmentString().Substring(2));
+
+			string rootTableName = persister.TableName;
+			SqlString fromJoinFragment = persister.FromJoinFragment(tableAlias, true, false);
+			select.SetFromClause(rootTableName + " " + tableAlias + fromJoinFragment);
+
+			var whereJoinFragment = GetWhereJoinFragment(persister, tableAlias);
+
+			SqlString userWhereClause = SqlString.Empty;
+			if (whereClause.ChildCount != 0)
+			{
+				// If a where clause was specified in the update/delete query, use it to limit the
+				// returned ids here...
+				try
+				{
+					var nodes = new CommonTreeNodeStream(whereClause);
+					var gen = new SqlGenerator(Factory, nodes);
+					gen.whereClause();
+					userWhereClause = gen.GetSQL().Substring(7);
+				}
+				catch (RecognitionException e)
+				{
+					throw new HibernateException("Unable to generate id select for DML operation", e);
+				}
+				if (whereJoinFragment.Length > 0)
+				{
+					whereJoinFragment = whereJoinFragment.Append(" and ");
+				}
+			}
+
+			select.SetWhereClause(whereJoinFragment + userWhereClause);
+			
+			var builder = select.ToSqlStringBuilder();
+			//remove SELECT statement
+			builder.RemoveAt(0);
+			return builder.ToSqlString();
+		}
+
 		private static SqlString GetWhereJoinFragment(IJoinable persister, string tableAlias)
 		{
 			SqlString whereJoinFragment = persister.WhereJoinFragment(tableAlias, true, false);
