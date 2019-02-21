@@ -118,6 +118,16 @@ namespace NHibernate.Util
 				to.Add(obj);
 		}
 
+		internal static List<TResult> AsList<TResult>(this IList list)
+		{
+			return list as List<TResult> ?? list.Cast<TResult>().ToList();
+		}
+
+		internal static IList<TResult> ToIList<TResult>(this IList list)
+		{
+			return list as IList<TResult> ?? list.Cast<TResult>().ToList();
+		}
+
 		public static void AddAll<TKey, TValue>(IDictionary<TKey, TValue> to, IDictionary<TKey, TValue> from)
 		{
 			foreach (KeyValuePair<TKey, TValue> de in from)

@@ -251,14 +251,7 @@ namespace NHibernate.Loader
 		/// persister from each row of the <c>DataReader</c>. If an object is supplied, will attempt to
 		/// initialize that object. If a collection is supplied, attempt to initialize that collection.
 		/// </summary>
-		private IList DoQueryAndInitializeNonLazyCollections(ISessionImplementor session, QueryParameters queryParameters,
-															 bool returnProxies)
-		{
-			return DoQueryAndInitializeNonLazyCollections(session, queryParameters, returnProxies, null);
-		}
-
-
-		private IList DoQueryAndInitializeNonLazyCollections(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer)
+		private List<TResult> DoQueryAndInitializeNonLazyCollections<TResult>(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer = null)
 		{
 			IPersistenceContext persistenceContext = session.PersistenceContext;
 			bool defaultReadOnlyOrig = persistenceContext.DefaultReadOnly;
@@ -267,14 +260,13 @@ namespace NHibernate.Loader
 				persistenceContext.DefaultReadOnly = queryParameters.ReadOnly;
 			else
 				queryParameters.ReadOnly = persistenceContext.DefaultReadOnly;
-
+			List<TResult> result;
 			persistenceContext.BeforeLoad();
-			IList result;
 			try
 			{
 				try
 				{
-					result = DoQuery(session, queryParameters, returnProxies, forcedResultTransformer);
+					result = DoQuery<TResult>(session, queryParameters, returnProxies, forcedResultTransformer);
 				}
 				finally
 				{
@@ -460,7 +452,7 @@ namespace NHibernate.Loader
 			}
 		}
 
-		private IList DoQuery(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer)
+		private List<TResult> DoQuery<TResult>(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer)
 		{
 			using (session.BeginProcess())
 			{
@@ -484,7 +476,7 @@ namespace NHibernate.Loader
 
 				bool createSubselects = IsSubselectLoadingEnabled;
 				List<EntityKey[]> subselectResultKeys = createSubselects ? new List<EntityKey[]>() : null;
-				IList results = new List<object>();
+				var results = new List<TResult>();
 				var cacheBatcher = new CacheBatcher(session);
 
 				try
@@ -509,7 +501,7 @@ namespace NHibernate.Loader
 															hydratedObjects,
 															keys, returnProxies, forcedResultTransformer,
 															(persister, data) => cacheBatcher.AddToBatch(persister, data));
-						results.Add(result);
+						results.Add((TResult) result);
 
 						if (createSubselects)
 						{
@@ -721,12 +713,15 @@ namespace NHibernate.Loader
 			return false;
 		}
 
+		//public virtual IList<TResult> GetResultList<TResult>(IList results, IResultTransformer resultTransformer)
+		//{
+		//	return GetResultList(results, resultTransformer).AsList<TResult>();
+		//}
 
 		public virtual IList GetResultList(IList results, IResultTransformer resultTransformer)
 		{
 			return results;
 		}
-
 
 		/// <summary>
 		/// Returns the aliases that correspond to a result row.
@@ -1589,7 +1584,7 @@ namespace NHibernate.Loader
 				QueryParameters qp =
 					new QueryParameters(new IType[] { identifierType }, new object[] { id }, optionalObject, optionalEntityName,
 										optionalIdentifier);
-				result = DoQueryAndInitializeNonLazyCollections(session, qp, false);
+				result = DoQueryAndInitializeNonLazyCollections<object>(session, qp, false);
 			}
 			catch (HibernateException)
 			{
@@ -1618,8 +1613,7 @@ namespace NHibernate.Loader
 			IList result;
 			try
 			{
-				result =
-					DoQueryAndInitializeNonLazyCollections(session,
+				result = DoQueryAndInitializeNonLazyCollections<object>(session,
 														   new QueryParameters(new IType[] { keyType, indexType },
 																			   new object[] { key, index }), false);
 			}
@@ -1652,7 +1646,7 @@ namespace NHibernate.Loader
 			try
 			{
 				result =
-					DoQueryAndInitializeNonLazyCollections(session,
+					DoQueryAndInitializeNonLazyCollections<object>(session,
 														   new QueryParameters(types, ids, optionalObject, optionalEntityName,
 																			   optionalId), false);
 			}
@@ -1685,7 +1679,7 @@ namespace NHibernate.Loader
 			object[] ids = new object[] { id };
 			try
 			{
-				DoQueryAndInitializeNonLazyCollections(session, new QueryParameters(new IType[] { type }, ids, ids), true);
+				DoQueryAndInitializeNonLazyCollections<object>(session, new QueryParameters(new IType[] { type }, ids, ids), true);
 			}
 			catch (HibernateException)
 			{
@@ -1716,7 +1710,7 @@ namespace NHibernate.Loader
 			ArrayHelper.Fill(idTypes, type);
 			try
 			{
-				DoQueryAndInitializeNonLazyCollections(session, new QueryParameters(idTypes, ids, ids), true);
+				DoQueryAndInitializeNonLazyCollections<object>(session, new QueryParameters(idTypes, ids, ids), true);
 			}
 			catch (HibernateException)
 			{
@@ -1742,7 +1736,7 @@ namespace NHibernate.Loader
 		{
 			try
 			{
-				DoQueryAndInitializeNonLazyCollections(session,
+				DoQueryAndInitializeNonLazyCollections<object>(session,
 													   new QueryParameters(parameterTypes, parameterValues, namedParameters, ids),
 													   true);
 			}
@@ -1791,9 +1785,28 @@ namespace NHibernate.Loader
 
 			if (cacheable)
 			{
-				return ListUsingQueryCache(session, queryParameters, querySpaces);
+				return ListUsingQueryCache<object>(session, queryParameters, querySpaces);
 			}
-			return ListIgnoreQueryCache(session, queryParameters);
+			return ListIgnoreQueryCache<object>(session, queryParameters);
+		}
+
+		/// <summary>
+		/// Return the query results, using the query cache, called
+		/// by subclasses that implement cacheable queries
+		/// </summary>
+		/// <param name="session"></param>
+		/// <param name="queryParameters"></param>
+		/// <param name="querySpaces"></param>
+		/// <returns></returns>
+		protected IList<TResult> List<TResult>(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces)
+		{
+			var cacheable = IsCacheable(queryParameters);
+
+			if (cacheable)
+			{
+				return ListUsingQueryCache<TResult>(session, queryParameters, querySpaces);
+			}
+			return ListIgnoreQueryCache<TResult>(session, queryParameters);
 		}
 
 		internal bool IsCacheable(QueryParameters queryParameters)
@@ -1801,12 +1814,18 @@ namespace NHibernate.Loader
 			return _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable;
 		}
 
-		private IList ListIgnoreQueryCache(ISessionImplementor session, QueryParameters queryParameters)
+		private List<TResult> ListIgnoreQueryCache<TResult>(ISessionImplementor session, QueryParameters queryParameters)
 		{
-			return GetResultList(DoList(session, queryParameters), queryParameters.ResultTransformer);
+			//TODO: 
+			// Need to find a way that allows to safely call DoListInternal<TResult>
+			bool isResultListChangeType = true;
+			return GetResultList(
+				isResultListChangeType ? DoListInternal<object>(session, queryParameters, null)
+				: (IList) DoListInternal<TResult>(session, queryParameters, null)
+				, queryParameters.ResultTransformer).AsList<TResult>();
 		}
 
-		private IList ListUsingQueryCache(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces)
+		private List<TResult> ListUsingQueryCache<TResult>(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces)
 		{
 			IQueryCache queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
 
@@ -1822,7 +1841,8 @@ namespace NHibernate.Loader
 
 			result = TransformCacheableResults(queryParameters, key.ResultTransformer, result);
 
-			return GetResultList(result, queryParameters.ResultTransformer);
+			//TODO: 
+			return GetResultList(result, queryParameters.ResultTransformer).AsList<TResult>();
 		}
 
 		internal IList TransformCacheableResults(QueryParameters queryParameters, CacheableResultTransformer transformer, IList result)
@@ -1914,17 +1934,26 @@ namespace NHibernate.Loader
 
 		protected IList DoList(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer)
 		{
+			return DoListInternal<object>(session, queryParameters, forcedResultTransformer);
+		}
+
+		protected IList<TResult> DoList<TResult>(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer = null)
+		{
+			return DoListInternal<TResult>(session, queryParameters, forcedResultTransformer);
+		}
+
+		private List<TResult> DoListInternal<TResult>(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer)
+		{
 			bool statsEnabled = Factory.Statistics.IsStatisticsEnabled;
 			var stopWatch = new Stopwatch();
 			if (statsEnabled)
 			{
 				stopWatch.Start();
 			}
-
-			IList result;
+			List<TResult> result;
 			try
 			{
-				result = DoQueryAndInitializeNonLazyCollections(session, queryParameters, true, forcedResultTransformer);
+				 result = DoQueryAndInitializeNonLazyCollections<TResult>(session, queryParameters, true, forcedResultTransformer);
 			}
 			catch (HibernateException)
 			{

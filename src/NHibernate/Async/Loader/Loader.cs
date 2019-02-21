@@ -49,18 +49,7 @@ namespace NHibernate.Loader
 		/// persister from each row of the <c>DataReader</c>. If an object is supplied, will attempt to
 		/// initialize that object. If a collection is supplied, attempt to initialize that collection.
 		/// </summary>
-		private Task<IList> DoQueryAndInitializeNonLazyCollectionsAsync(ISessionImplementor session, QueryParameters queryParameters,
-															 bool returnProxies, CancellationToken cancellationToken)
-		{
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return Task.FromCanceled<IList>(cancellationToken);
-			}
-			return DoQueryAndInitializeNonLazyCollectionsAsync(session, queryParameters, returnProxies, null, cancellationToken);
-		}
-
-
-		private async Task<IList> DoQueryAndInitializeNonLazyCollectionsAsync(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer, CancellationToken cancellationToken)
+		private async Task<List<TResult>> DoQueryAndInitializeNonLazyCollectionsAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer = null, CancellationToken cancellationToken = default(CancellationToken))
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			IPersistenceContext persistenceContext = session.PersistenceContext;
@@ -70,14 +59,13 @@ namespace NHibernate.Loader
 				persistenceContext.DefaultReadOnly = queryParameters.ReadOnly;
 			else
 				queryParameters.ReadOnly = persistenceContext.DefaultReadOnly;
-
+			List<TResult> result;
 			persistenceContext.BeforeLoad();
-			IList result;
 			try
 			{
 				try
 				{
-					result = await (DoQueryAsync(session, queryParameters, returnProxies, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
+					result = await (DoQueryAsync<TResult>(session, queryParameters, returnProxies, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
 				}
 				finally
 				{
@@ -254,7 +242,7 @@ namespace NHibernate.Loader
 			}
 		}
 
-		private async Task<IList> DoQueryAsync(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer, CancellationToken cancellationToken)
+		private async Task<List<TResult>> DoQueryAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, bool returnProxies, IResultTransformer forcedResultTransformer, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			using (session.BeginProcess())
@@ -279,7 +267,7 @@ namespace NHibernate.Loader
 
 				bool createSubselects = IsSubselectLoadingEnabled;
 				List<EntityKey[]> subselectResultKeys = createSubselects ? new List<EntityKey[]>() : null;
-				IList results = new List<object>();
+				var results = new List<TResult>();
 				var cacheBatcher = new CacheBatcher(session);
 
 				try
@@ -304,7 +292,7 @@ namespace NHibernate.Loader
 															hydratedObjects,
 															keys, returnProxies, forcedResultTransformer,
 															(persister, data) => cacheBatcher.AddToBatch(persister, data), cancellationToken)).ConfigureAwait(false);
-						results.Add(result);
+						results.Add((TResult) result);
 
 						if (createSubselects)
 						{
@@ -1107,7 +1095,7 @@ namespace NHibernate.Loader
 				QueryParameters qp =
 					new QueryParameters(new IType[] { identifierType }, new object[] { id }, optionalObject, optionalEntityName,
 										optionalIdentifier);
-				result = await (DoQueryAndInitializeNonLazyCollectionsAsync(session, qp, false, cancellationToken)).ConfigureAwait(false);
+				result = await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session, qp, false, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1138,10 +1126,9 @@ namespace NHibernate.Loader
 			IList result;
 			try
 			{
-				result =
-					await (DoQueryAndInitializeNonLazyCollectionsAsync(session,
+				result = await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session,
 														   new QueryParameters(new IType[] { keyType, indexType },
-																			   new object[] { key, index }), false, cancellationToken)).ConfigureAwait(false);
+																			   new object[] { key, index }), false, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (Exception sqle)
@@ -1174,9 +1161,9 @@ namespace NHibernate.Loader
 			try
 			{
 				result =
-					await (DoQueryAndInitializeNonLazyCollectionsAsync(session,
+					await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session,
 														   new QueryParameters(types, ids, optionalObject, optionalEntityName,
-																			   optionalId), false, cancellationToken)).ConfigureAwait(false);
+																			   optionalId), false, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1209,7 +1196,7 @@ namespace NHibernate.Loader
 			object[] ids = new object[] { id };
 			try
 			{
-				await (DoQueryAndInitializeNonLazyCollectionsAsync(session, new QueryParameters(new IType[] { type }, ids, ids), true, cancellationToken)).ConfigureAwait(false);
+				await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session, new QueryParameters(new IType[] { type }, ids, ids), true, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1242,7 +1229,7 @@ namespace NHibernate.Loader
 			ArrayHelper.Fill(idTypes, type);
 			try
 			{
-				await (DoQueryAndInitializeNonLazyCollectionsAsync(session, new QueryParameters(idTypes, ids, ids), true, cancellationToken)).ConfigureAwait(false);
+				await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session, new QueryParameters(idTypes, ids, ids), true, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1270,9 +1257,9 @@ namespace NHibernate.Loader
 			cancellationToken.ThrowIfCancellationRequested();
 			try
 			{
-				await (DoQueryAndInitializeNonLazyCollectionsAsync(session,
+				await (DoQueryAndInitializeNonLazyCollectionsAsync<object>(session,
 													   new QueryParameters(parameterTypes, parameterValues, namedParameters, ids),
-													   true, cancellationToken)).ConfigureAwait(false);
+													   true, cancellationToken: cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1327,35 +1314,52 @@ namespace NHibernate.Loader
 		/// <param name="querySpaces"></param>
 		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
 		/// <returns></returns>
-		protected Task<IList> ListAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
-		{
-			if (cancellationToken.IsCancellationRequested)
-			{
-				return Task.FromCanceled<IList>(cancellationToken);
-			}
-			try
-			{
-				var cacheable = IsCacheable(queryParameters);
-
-				if (cacheable)
-				{
-					return ListUsingQueryCacheAsync(session, queryParameters, querySpaces, cancellationToken);
-				}
-				return ListIgnoreQueryCacheAsync(session, queryParameters, cancellationToken);
-			}
-			catch (Exception ex)
-			{
-				return Task.FromException<IList>(ex);
-			}
-		}
-
-		private async Task<IList> ListIgnoreQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters, CancellationToken cancellationToken)
+		protected async Task<IList> ListAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
-			return GetResultList(await (DoListAsync(session, queryParameters, cancellationToken)).ConfigureAwait(false), queryParameters.ResultTransformer);
+			var cacheable = IsCacheable(queryParameters);
+
+			if (cacheable)
+			{
+				return await (ListUsingQueryCacheAsync<object>(session, queryParameters, querySpaces, cancellationToken)).ConfigureAwait(false);
+			}
+			return await (ListIgnoreQueryCacheAsync<object>(session, queryParameters, cancellationToken)).ConfigureAwait(false);
 		}
 
-		private async Task<IList> ListUsingQueryCacheAsync(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
+		/// <summary>
+		/// Return the query results, using the query cache, called
+		/// by subclasses that implement cacheable queries
+		/// </summary>
+		/// <param name="session"></param>
+		/// <param name="queryParameters"></param>
+		/// <param name="querySpaces"></param>
+		/// <param name="cancellationToken">A cancellation token that can be used to cancel the work</param>
+		/// <returns></returns>
+		protected async Task<IList<TResult>> ListAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			var cacheable = IsCacheable(queryParameters);
+
+			if (cacheable)
+			{
+				return await (ListUsingQueryCacheAsync<TResult>(session, queryParameters, querySpaces, cancellationToken)).ConfigureAwait(false);
+			}
+			return await (ListIgnoreQueryCacheAsync<TResult>(session, queryParameters, cancellationToken)).ConfigureAwait(false);
+		}
+
+		private async Task<List<TResult>> ListIgnoreQueryCacheAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			//TODO: 
+			// Need to find a way that allows to safely call DoListInternal<TResult>
+			bool isResultListChangeType = true;
+			return GetResultList(
+				isResultListChangeType ? await (DoListInternalAsync<object>(session, queryParameters, null, cancellationToken)).ConfigureAwait(false)
+				: (IList) await (DoListInternalAsync<TResult>(session, queryParameters, null, cancellationToken)).ConfigureAwait(false)
+				, queryParameters.ResultTransformer).AsList<TResult>();
+		}
+
+		private async Task<List<TResult>> ListUsingQueryCacheAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, ISet<string> querySpaces, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			IQueryCache queryCache = _factory.GetQueryCache(queryParameters.CacheRegion);
@@ -1372,7 +1376,8 @@ namespace NHibernate.Loader
 
 			result = TransformCacheableResults(queryParameters, key.ResultTransformer, result);
 
-			return GetResultList(result, queryParameters.ResultTransformer);
+			//TODO: 
+			return GetResultList(result, queryParameters.ResultTransformer).AsList<TResult>();
 		}
 
 		private async Task<IList> GetResultFromQueryCacheAsync(
@@ -1442,17 +1447,28 @@ namespace NHibernate.Loader
 		protected async Task<IList> DoListAsync(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
+			return await (DoListInternalAsync<object>(session, queryParameters, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
+		}
+
+		protected async Task<IList<TResult>> DoListAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer = null, CancellationToken cancellationToken = default(CancellationToken))
+		{
+			cancellationToken.ThrowIfCancellationRequested();
+			return await (DoListInternalAsync<TResult>(session, queryParameters, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
+		}
+
+		private async Task<List<TResult>> DoListInternalAsync<TResult>(ISessionImplementor session, QueryParameters queryParameters, IResultTransformer forcedResultTransformer, CancellationToken cancellationToken)
+		{
+			cancellationToken.ThrowIfCancellationRequested();
 			bool statsEnabled = Factory.Statistics.IsStatisticsEnabled;
 			var stopWatch = new Stopwatch();
 			if (statsEnabled)
 			{
 				stopWatch.Start();
 			}
-
-			IList result;
+			List<TResult> result;
 			try
 			{
-				result = await (DoQueryAndInitializeNonLazyCollectionsAsync(session, queryParameters, true, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
+				 result = await (DoQueryAndInitializeNonLazyCollectionsAsync<TResult>(session, queryParameters, true, forcedResultTransformer, cancellationToken)).ConfigureAwait(false);
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
