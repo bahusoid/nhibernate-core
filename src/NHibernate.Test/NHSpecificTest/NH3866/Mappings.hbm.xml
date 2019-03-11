@@ -1,0 +1,34 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2"
+                   assembly="NHibernate.Test"
+                   namespace="NHibernate.Test.NHSpecificTest.NH3866">
+
+	<class name="EntityA">
+		<id name="Id">
+			<generator class="guid" />
+		</id>
+		<list name="EntityBs" cascade="all-delete-orphan">
+			<key column="EntityAId"/>
+			<index column="EntityBIndex"/>
+			<many-to-many class="EntityB"/>
+		</list>
+		<list name="EntityCs" cascade="all-delete-orphan">
+			<key column="EntityAId"/>
+			<index column="EntityCIndex"/>
+			<many-to-many class="EntityC"/>
+		</list>
+	</class>
+
+	<class name="EntityB">
+		<id name="Id">
+			<generator class="guid" />
+		</id>
+	</class>
+
+	<class name="EntityC">
+		<id name="Id">
+			<generator class="guid" />
+		</id>
+	</class>
+
+</hibernate-mapping>
