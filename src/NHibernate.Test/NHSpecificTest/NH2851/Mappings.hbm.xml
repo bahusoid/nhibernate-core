@@ -1,0 +1,21 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernate.Test"
+                   namespace="NHibernate.Test.NHSpecificTest.NH2851">
+	<class name="Practitioner">
+		<id name="Id" column="PractitionerId" unsaved-value="0" access="nosetter.camelcase-underscore">
+			<generator class="identity" />
+		</id>
+
+		<many-to-one name="User" unique="true" not-null="false" column="user_id" />
+	</class>
+
+	<class name="User" table="users">
+		<id name="UserID" column="user_id" unsaved-value="0" access="nosetter.camelcase-underscore">
+			<generator class="identity" />
+		</id>
+
+		<one-to-one name="Practitioner" class="Practitioner" property-ref="User" constrained="false" />
+
+		<property name="UserName" />
+	</class>
+</hibernate-mapping>
