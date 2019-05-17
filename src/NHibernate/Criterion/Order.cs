@@ -38,18 +38,8 @@ namespace NHibernate.Criterion
 		/// </summary>
 		public virtual SqlString ToSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery)
 		{
-			if (projection != null)
-			{
-				SqlString sb = SqlString.Empty;
-				SqlString produced = this.projection.ToSqlString(criteria, 0, criteriaQuery);
-				SqlString truncated = SqlStringHelper.RemoveAsAliasesFromSql(produced);
-				sb = sb.Append(truncated);
-				sb = sb.Append(ascending ? " asc" : " desc");
-				return sb;
-			}
-
-			string[] columns = criteriaQuery.GetColumnAliasesUsingProjection(criteria, propertyName);
-			Type.IType type = criteriaQuery.GetTypeUsingProjection(criteria, propertyName);
+			SqlString[] columns = CriterionUtil.GetColumnNames(propertyName, projection, criteriaQuery, criteria);
+			Type.IType type = projection?.GetTypes(criteria, criteriaQuery)[0] ?? criteriaQuery.GetTypeUsingProjection(criteria, propertyName);
 
 			StringBuilder fragment = new StringBuilder();
 			ISessionFactoryImplementor factory = criteriaQuery.Factory;
