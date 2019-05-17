@@ -1,6 +1,4 @@
 using System;
-using System.Text;
-using NHibernate.Criterion;
 using NHibernate.Engine;
 using NHibernate.SqlCommand;
 
@@ -39,35 +37,47 @@ namespace NHibernate.Criterion
 		public virtual SqlString ToSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery)
 		{
 			SqlString[] columns = CriterionUtil.GetColumnNames(propertyName, projection, criteriaQuery, criteria);
-			Type.IType type = projection?.GetTypes(criteria, criteriaQuery)[0] ?? criteriaQuery.GetTypeUsingProjection(criteria, propertyName);
+			
+			bool[] toLowerColumns = ignoreCase ? FindStringColumns(criteria, criteriaQuery) : null;
 
-			StringBuilder fragment = new StringBuilder();
-			ISessionFactoryImplementor factory = criteriaQuery.Factory;
+			var factory = criteriaQuery.Factory;
+			var fragment = new SqlStringBuilder();
 			for (int i = 0; i < columns.Length; i++)
 			{
-				bool lower = ignoreCase && IsStringType(type.SqlTypes(factory)[i]);
+				bool lower = toLowerColumns?[i] == true;
 
 				if (lower)
 				{
-					fragment.Append(factory.Dialect.LowercaseFunction)
-						.Append("(");
+					fragment
+						.Add(factory.Dialect.LowercaseFunction)
+						.Add("(");
 				}
-				fragment.Append(columns[i]);
+
+				fragment.Add(columns[i]);
 
 				if (lower)
 				{
-					fragment.Append(")");
+					fragment.Add(")");
 				}
 
-				fragment.Append(ascending ? " asc" : " desc");
+				fragment.Add(ascending ? " asc" : " desc");
 
 				if (i < columns.Length - 1)
 				{
-					fragment.Append(", ");
+					fragment.Add(", ");
 				}
 			}
 
-			return new SqlString(fragment.ToString());
+			return fragment.ToSqlString();
+		}
+
+		private bool[] FindStringColumns(ICriteria criteria, ICriteriaQuery criteriaQuery)
+		{
+			var type = projection == null
+				? criteriaQuery.GetTypeUsingProjection(criteria, propertyName)
+				: projection.GetTypes(criteria, criteriaQuery)[0];
+
+			return Array.ConvertAll(type.SqlTypes(criteriaQuery.Factory), t => IsStringType(t));
 		}
 
 		public override string ToString()
