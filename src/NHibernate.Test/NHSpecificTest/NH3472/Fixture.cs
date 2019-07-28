@@ -159,6 +159,29 @@ namespace NHibernate.Test.NHSpecificTest.NH3472
 			}
 		}
 
+		[Test]
+		public void QueryWithJoinQueryOverAndMultipleAliasesThrow()
+		{
+			using (var s = OpenSession())
+			{
+				Cat parent1 = null;
+				Cat parent2 = null;
+				using (var spy = new SqlLogSpy())
+				{
+					var list =
+						s
+							.QueryOver<Cat>()
+							//.Fetch(SelectMode.Fetch, o => o.Parent)
+							//.Fetch(SelectMode.Fetch, o => o.Parent.Parent)
+							.JoinAlias(o => o.Parent, () => parent1)
+							.JoinAlias(o => o.Parent, () => parent2)
+							.JoinQueryOver(o => o.Parent.Parent)
+							.Where(x => parent1.Age == 4)
+							.List();
+				}
+			}
+		}
+
 		[Test, Explicit("Debatable use case")]
 		public void QueryWithFetchesAndMultipleJoinsToSameAssociation()
 		{
