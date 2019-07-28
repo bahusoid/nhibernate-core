@@ -116,6 +116,49 @@ namespace NHibernate.Test.NHSpecificTest.NH3472
 			}
 		}
 
+		[Test]
+		public void QueryWithJoinQueryOverAndAliasDoNotDuplicateJoin()
+		{
+			using (var s = OpenSession())
+			{
+				Cat parent = null;
+				using (var spy = new SqlLogSpy())
+				{
+					var list =
+						s
+							.QueryOver<Cat>()
+							//.Fetch(SelectMode.Fetch, o => o.Parent)
+							//.Fetch(SelectMode.Fetch, o => o.Parent.Parent)
+							.JoinAlias(o => o.Parent, () => parent)
+							.JoinQueryOver(o => o.Parent.Parent)
+							.Where(x => parent.Age == 4)
+							.List();
+
+					// Two joins to Cat are expected: one for the immediate parent, and a second for the grand-parent.
+					// So checking if it does not contain three joins or more. (The regex uses "[\s\S]" instead of "."
+					// because the SQL is formatted by default and contains "\n" which are not matched by ".".)
+					Assert.That(spy.GetWholeLog(), Does.Not.Match(@"(?:\bjoin\s*Cat\b[\s\S]*){3,}").IgnoreCase);
+					Assert.That(list, Has.Count.EqualTo(2));
+					Assert.That(
+						NHibernateUtil.IsInitialized(list[0].Parent),
+						Is.True,
+						"first cat parent initialization status");
+					Assert.That(
+						NHibernateUtil.IsInitialized(list[1].Parent),
+						Is.True,
+						"second cat parent initialization status");
+					Assert.That(
+						NHibernateUtil.IsInitialized(list[0].Parent.Parent),
+						Is.True,
+						"first cat parent parent initialization status");
+					Assert.That(
+						NHibernateUtil.IsInitialized(list[1].Parent.Parent),
+						Is.True,
+						"second cat parent parent initialization status");
+				}
+			}
+		}
+
 		[Test, Explicit("Debatable use case")]
 		public void QueryWithFetchesAndMultipleJoinsToSameAssociation()
 		{

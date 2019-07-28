@@ -329,7 +329,7 @@ namespace NHibernate.Loader.Criteria
 
 		public bool IsJoin(string path, string critAlias)
 		{
-			return associationPathCriteriaMap.ContainsKey(new AliasKey(critAlias, path));
+			return GetCriteria(path, critAlias) != null;
 		}
 
 		/// <summary>
@@ -387,10 +387,29 @@ namespace NHibernate.Loader.Criteria
 
 		public ICriteria GetCriteria(string path, string critAlias)
 		{
+			if (!string.IsNullOrEmpty(critAlias))
+			{
+				aliasCriteriaMap.TryGetValue(critAlias, out var crit);
+				return crit;
+			}
+
 			var key = new AliasKey(critAlias, path);
-			associationPathCriteriaMap.TryGetValue(key, out var result);
-			logger.Debug("getCriteria for {0}: crit={1}", key, result);
-			return result;
+			if (associationPathCriteriaMap.TryGetValue(key, out var result))
+			{
+				return result;
+			}
+
+			//To support constructions with aliased JoinAlias and multi-level JoinQueryOver like
+			//.JoinAlias(x => x.Child, () => chilAlias).JoinQueryOver(x => x.Child.GrandChild)
+			try
+			{
+				return associationPathCriteriaMap
+						.Where(kv => kv.Key.Path == path).Select(kv => kv.Value).SingleOrDefault();
+			}
+			catch (InvalidOperationException e)
+			{
+				throw new HibernateException($"Found multiple criterias for given path '{path}'. Specify exact alias when referencing criteria.", e);
+			}
 		}
 
 		private void CreateAliasCriteriaMap()
