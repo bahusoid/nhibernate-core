@@ -47,7 +47,7 @@ namespace NHibernate.Loader.Criteria
 		private readonly Dictionary<string, string> sqlAliasToCriteriaAliasMap = new Dictionary<string, string>();
 		private readonly Dictionary<string, HashSet<string>> associationAliasToChildrenAliasesMap = new Dictionary<string, HashSet<string>>();
 		private readonly IDictionary<string, ICriteria> aliasCriteriaMap = new Dictionary<string, ICriteria>();
-		private readonly Dictionary<AliasKey, CriteriaImpl.Subcriteria> associationPathCriteriaMap = new Dictionary<AliasKey, CriteriaImpl.Subcriteria>();
+		private ILookup<string, CriteriaImpl.Subcriteria> associationPathCriteriaMap;
 		private readonly Dictionary<AliasKey, JoinType> associationPathJoinTypesMap = new Dictionary<AliasKey, JoinType>();
 		private readonly Dictionary<AliasKey, ICriterion> withClauseMap = new Dictionary<AliasKey, ICriterion>();
 		private readonly ISessionFactoryImplementor sessionFactory;
@@ -324,7 +324,7 @@ namespace NHibernate.Loader.Criteria
 		[Obsolete("Use overload with a critAlias additional parameter", true)]
 		public bool IsJoin(string path)
 		{
-			return associationPathCriteriaMap.Keys.Any(k => k.Path == path);
+			return IsJoin(path, string.Empty);
 		}
 
 		public bool IsJoin(string path, string critAlias)
@@ -376,13 +376,7 @@ namespace NHibernate.Loader.Criteria
 		[Obsolete("Use overload with a critAlias additional parameter", true)]
 		public ICriteria GetCriteria(string path)
 		{
-			var result =
-				associationPathCriteriaMap
-					.Where(kv => kv.Key.Path == path)
-					.Select(kv => kv.Value)
-					.SingleOrDefault();
-			logger.Debug("getCriteria for path {0}: crit={1}", path, result);
-			return result;
+			return GetCriteria(path, string.Empty);
 		}
 
 		public ICriteria GetCriteria(string path, string critAlias)
@@ -393,22 +387,15 @@ namespace NHibernate.Loader.Criteria
 				return crit;
 			}
 
-			var key = new AliasKey(critAlias, path);
-			if (associationPathCriteriaMap.TryGetValue(key, out var result))
-			{
-				return result;
-			}
-
 			//To support constructions with aliased JoinAlias and multi-level JoinQueryOver like
 			//.JoinAlias(x => x.Child, () => chilAlias).JoinQueryOver(x => x.Child.GrandChild)
 			try
 			{
-				return associationPathCriteriaMap
-						.Where(kv => kv.Key.Path == path).Select(kv => kv.Value).SingleOrDefault();
+				return associationPathCriteriaMap[path].SingleOrDefault();
 			}
 			catch (InvalidOperationException e)
 			{
-				throw new HibernateException($"Found multiple criterias for given path '{path}'. Specify exact alias when referencing criteria.", e);
+				throw new HibernateException($"Found multiple criterias for given path '{path}'. Specify exact alias when referencing this path in query.", e);
 			}
 		}
 
@@ -434,47 +421,41 @@ namespace NHibernate.Loader.Criteria
 
 		private void CreateAssociationPathCriteriaMap()
 		{
-			foreach (var crit in rootCriteria.IterateSubcriteria())
-			{
-				var wholeAssociationPath = GetWholeAssociationPath(crit, out var parentAlias);
-				if (parentAlias == null)
-					parentAlias = rootCriteria.Alias;
+			associationPathCriteriaMap = rootCriteria.IterateSubcriteria().ToLookup(
+				crit =>
+				{
+					var wholeAssociationPath = GetWholeAssociationPath(crit, out var parentAlias);
+					if (parentAlias == null)
+						parentAlias = rootCriteria.Alias;
 
-				if (!associationAliasToChildrenAliasesMap.TryGetValue(parentAlias, out var children))
-				{
-					children = new HashSet<string>();
-					associationAliasToChildrenAliasesMap.Add(parentAlias, children);
-				}
-				children.Add(crit.Alias);
+					if (!associationAliasToChildrenAliasesMap.TryGetValue(parentAlias, out var children))
+					{
+						children = new HashSet<string>();
+						associationAliasToChildrenAliasesMap.Add(parentAlias, children);
+					}
+					children.Add(crit.Alias);
 
-				var key = new AliasKey(crit.Alias, wholeAssociationPath);
-				try
-				{
-					associationPathCriteriaMap.Add(key, crit);
-				}
-				catch (ArgumentException ae)
-				{
-					throw new QueryException("duplicate association path: " + key, ae);
-				}
+					var key = new AliasKey(crit.Alias, wholeAssociationPath);
 
-				try
-				{
-					associationPathJoinTypesMap.Add(key, crit.JoinType);
-				}
-				catch (ArgumentException ae)
-				{
-					throw new QueryException("duplicate association path: " + key, ae);
-				}
+					try
+					{
+						associationPathJoinTypesMap.Add(key, crit.JoinType);
+					}
+					catch (ArgumentException ae)
+					{
+						throw new QueryException("duplicate association path: " + key, ae);
+					}
 
-				try
-				{
-					withClauseMap.Add(key, crit.WithClause);
-				}
-				catch (ArgumentException ae)
-				{
-					throw new QueryException("duplicate association path: " + key, ae);
-				}
-			}
+					try
+					{
+						withClauseMap.Add(key, crit.WithClause);
+					}
+					catch (ArgumentException ae)
+					{
+						throw new QueryException("duplicate association path: " + key, ae);
+					}
+					return wholeAssociationPath;
+				});
 		}
 
 		private string GetWholeAssociationPath(CriteriaImpl.Subcriteria subcriteria, out string parentAlias)
@@ -529,9 +510,12 @@ namespace NHibernate.Loader.Criteria
 
 			foreach (var me in associationPathCriteriaMap)
 			{
-				var info = GetPathInfo(me.Key.Path, rootProvider);
-				criteriaInfoMap.Add(me.Value, info);
-				nameCriteriaInfoMap[info.Name] = info;
+				var info = GetPathInfo(me.Key, rootProvider);
+				foreach (var subcriteria in me)
+				{
+					criteriaInfoMap.Add(subcriteria, info);
+					nameCriteriaInfoMap[info.Name] = info;
+				}
 			}
 		}
 
@@ -556,11 +540,11 @@ namespace NHibernate.Loader.Criteria
 		{
 			foreach (var me in associationPathCriteriaMap)
 			{
-				if (GetPathJoinable(me.Key.Path) is ICollectionPersister collectionPersister)
+				if (GetPathJoinable(me.Key) is ICollectionPersister collectionPersister)
 				{
 					criteriaCollectionPersisters.Add(collectionPersister);
 
-					if (collectionPersister.HasCache && me.Value.HasRestrictions)
+					if (collectionPersister.HasCache && me.Any(x => x.HasRestrictions))
 					{
 						uncacheableCollectionPersisters.Add(collectionPersister);
 					}
