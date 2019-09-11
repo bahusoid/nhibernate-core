@@ -312,44 +312,41 @@ namespace NHibernate.Impl
 		// See NH-3079 (#1117)
 		private void ComputeFlattenedParameters()
 		{
-			var flattenedParameters = FlattenTypesAndValues(base.Types, base.Values.Cast<object>());
-			_flattenedTypes = flattenedParameters.Item1.ToList();
-			_flattenedValues = flattenedParameters.Item2.ToList();
+			var flattenedParameters = FlattenTypesAndValues(base.Types, base.Values);
+			_flattenedTypes = flattenedParameters.Item1;
+			_flattenedValues = flattenedParameters.Item2;
 
-			Tuple<IEnumerable<IType>, IEnumerable<object>> FlattenTypesAndValues(ICollection<IType> types, IEnumerable<object> values)
+			Tuple<List<IType>, List<object>> FlattenTypesAndValues(IList<IType> types, IList values)
 			{
 				var resultTypes = new List<IType>(types.Count * 2);
 				var resultValues = new List<object>(types.Count * 2);
-				using (var valuesEnumerator = values.GetEnumerator())
-				{
-					foreach (var type in types)
-					{
-						var actualType = type;
-						valuesEnumerator.MoveNext();
-						var value = valuesEnumerator.Current;
-						if (type is EntityType entityType)
-						{
-							actualType = entityType.GetIdentifierType(session);
-							value = entityType.GetIdentifier(value, session);
-						}
 
-						if (actualType is IAbstractComponentType componentType)
-						{
-							var flattened = FlattenTypesAndValues(
-								componentType.Subtypes,
-								componentType.GetPropertyValues(value, session));
-							resultTypes.AddRange(flattened.Item1);
-							resultValues.AddRange(flattened.Item2);
-						}
-						else
-						{
-							resultTypes.Add(actualType);
-							resultValues.Add(value);
-						}
+				for (var i = 0; i < types.Count; i++)
+				{
+					var value = values[i];
+					var actualType = types[i];
+					if (actualType is EntityType entityType)
+					{
+						actualType = entityType.GetIdentifierType(session);
+						value = entityType.GetIdentifier(value, session);
+					}
+
+					if (actualType is IAbstractComponentType componentType)
+					{
+						var flattened = FlattenTypesAndValues(
+							componentType.Subtypes,
+							componentType.GetPropertyValues(value, session));
+						resultTypes.AddRange(flattened.Item1);
+						resultValues.AddRange(flattened.Item2);
+					}
+					else
+					{
+						resultTypes.Add(actualType);
+						resultValues.Add(value);
 					}
 				}
 
-				return new Tuple<IEnumerable<IType>, IEnumerable<object>>(resultTypes, resultValues);
+				return System.Tuple.Create(resultTypes, resultValues);
 			}
 		}
 
