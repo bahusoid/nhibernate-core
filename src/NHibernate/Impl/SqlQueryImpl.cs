@@ -312,19 +312,20 @@ namespace NHibernate.Impl
 		// See NH-3079 (#1117)
 		private void ComputeFlattenedParameters()
 		{
-			var flattenedParameters = FlattenTypesAndValues(base.Types, base.Values);
-			_flattenedTypes = flattenedParameters.Item1;
-			_flattenedValues = flattenedParameters.Item2;
+			var types = base.Types;
+			var resultTypes = new List<IType>(types.Count * 2);
+			var resultValues = new List<object>(types.Count * 2);
 
-			Tuple<List<IType>, List<object>> FlattenTypesAndValues(IList<IType> types, IList values)
+			FlattenTypesAndValues(types, base.Values);
+			_flattenedTypes = resultTypes;
+			_flattenedValues = resultValues;
+
+			void FlattenTypesAndValues(IList<IType> typesToFlatten, IList values)
 			{
-				var resultTypes = new List<IType>(types.Count * 2);
-				var resultValues = new List<object>(types.Count * 2);
-
-				for (var i = 0; i < types.Count; i++)
+				for (var i = 0; i < typesToFlatten.Count; i++)
 				{
 					var value = values[i];
-					var actualType = types[i];
+					var actualType = typesToFlatten[i];
 					if (actualType is EntityType entityType)
 					{
 						actualType = entityType.GetIdentifierType(session);
@@ -333,11 +334,9 @@ namespace NHibernate.Impl
 
 					if (actualType is IAbstractComponentType componentType)
 					{
-						var flattened = FlattenTypesAndValues(
+						FlattenTypesAndValues(
 							componentType.Subtypes,
 							componentType.GetPropertyValues(value, session));
-						resultTypes.AddRange(flattened.Item1);
-						resultValues.AddRange(flattened.Item2);
 					}
 					else
 					{
@@ -345,8 +344,6 @@ namespace NHibernate.Impl
 						resultValues.Add(value);
 					}
 				}
-
-				return System.Tuple.Create(resultTypes, resultValues);
 			}
 		}
 
