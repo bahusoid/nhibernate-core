@@ -14,11 +14,11 @@ namespace NHibernate.Criterion
 		/// <summary> 
 		/// Get the criteria alias to SQL alias map
 		/// </summary>
-		public static IDictionary<string, string> GetCriteriaAliasToSQLAliasMap(this ICriteriaQuery criteriaQuery)
+		public static IDictionary<string, string> GetCriteriaSQLAliasMap(this ICriteriaQuery criteriaQuery)
 		{
 			if (criteriaQuery is CriteriaQueryTranslator translator)
 			{
-				return translator.GetCriteriaAliasesToSQLAliasesMap();
+				return translator.GetCriteriaSQLAliasMap();
 			}
 
 			return CollectionHelper.EmptyDictionary<string, string>();

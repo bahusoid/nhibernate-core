@@ -52,8 +52,7 @@ namespace NHibernate.Criterion
 
 		internal static SqlString GetSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery, SqlString sqlTemplate)
 		{
-			var map = criteriaQuery.GetCriteriaAliasToSQLAliasMap();
-			foreach (var kvp in map)
+			foreach (var kvp in criteriaQuery.GetCriteriaSQLAliasMap())
 			{
 				sqlTemplate = sqlTemplate.Replace("{" + kvp.Key + "}", kvp.Value);
 			}
