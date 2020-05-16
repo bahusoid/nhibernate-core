@@ -53,26 +53,13 @@ namespace NHibernate.Criterion
 
 		internal static SqlString GetSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery, SqlString sqlTemplate)
 		{
-			var oldValue = new Regex(@"\{(\w+)\}");
+			var map = criteriaQuery.GetCriteriaAliasToSQLAliasMap();
+			foreach (var kvp in map)
+			{
+				sqlTemplate = sqlTemplate.Replace("{" + kvp.Key + "}", kvp.Value);
+			}
 
-			//TODO: Extract aliases when SQLCriterion/SQLProjection is constructed?
-			return sqlTemplate.Replace(
-				oldValue,
-				match =>
-				{
-					var aliasName = match.Groups[1].Value;
-					if (string.Equals(aliasName, "alias", StringComparison.Ordinal))
-					{
-						return criteriaQuery.GetSQLAlias(criteria);
-					}
-
-					if (criteriaQuery.TryGetSQLAlias(aliasName, out var alias))
-					{
-						return alias;
-					}
-
-					return match.Value;
-				});
+			return sqlTemplate.Replace("{alias}", criteriaQuery.GetSQLAlias(criteria));
 		}
 
 		public override string ToString()

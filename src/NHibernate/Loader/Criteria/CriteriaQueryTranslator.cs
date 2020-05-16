@@ -863,21 +863,15 @@ namespace NHibernate.Loader.Criteria
 			return GetEntityName(subcriteria);
 		}
 
-		public bool TryGetSQLAlias(string criteriaAlias, out string alias)
+		public IDictionary<string, string> GetCriteriaAliasesToSQLAliasesMap()
 		{
-			if (aliasCriteriaMap.TryGetValue(criteriaAlias, out var criteria))
-			{
-				alias = GetSQLAlias(criteria);
-				return true;
-			}
-
+			var result = new Dictionary<string, string>();
 			if (outerQueryTranslator != null)
 			{
-				return outerQueryTranslator.TryGetSQLAlias(criteriaAlias, out alias);
+				result.AddOrOverride(outerQueryTranslator.GetCriteriaAliasToSQLAliasMap());
 			}
-
-			alias = null;
-			return false;
+			
+			return result.AddOrOverride(aliasCriteriaMap.ToDictionary(kvp => kvp.Key, kvp => GetSQLAlias(kvp.Value)));
 		}
 
 		public string GetSQLAlias(ICriteria criteria, string propertyName)

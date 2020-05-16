@@ -4,6 +4,7 @@ using NHibernate.Loader.Criteria;
 using NHibernate.Param;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
+using NHibernate.Util;
 
 namespace NHibernate.Criterion
 {
@@ -11,17 +12,16 @@ namespace NHibernate.Criterion
 	internal static class CriteriaQueryExtensions
 	{
 		/// <summary> 
-		/// Try get the SQL table alias for given criteria alias
+		/// Get the criteria alias to SQL alias map
 		/// </summary>
-		public static bool TryGetSQLAlias(this ICriteriaQuery criteriaQuery, string aliasName, out string alias)
+		public static IDictionary<string, string> GetCriteriaAliasToSQLAliasMap(this ICriteriaQuery criteriaQuery)
 		{
 			if (criteriaQuery is CriteriaQueryTranslator translator)
 			{
-				return translator.TryGetSQLAlias(aliasName, out alias);
+				return translator.GetCriteriaAliasesToSQLAliasesMap();
 			}
 
-			alias = null;
-			return false;
+			return CollectionHelper.EmptyDictionary<string, string>();
 		}
 	}
 
