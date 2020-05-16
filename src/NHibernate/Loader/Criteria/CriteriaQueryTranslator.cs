@@ -863,7 +863,7 @@ namespace NHibernate.Loader.Criteria
 			return GetEntityName(subcriteria);
 		}
 
-		public bool TryGetSqlAlias(string criteriaAlias, out string alias)
+		public bool TryGetSQLAlias(string criteriaAlias, out string alias)
 		{
 			if (aliasCriteriaMap.TryGetValue(criteriaAlias, out var criteria))
 			{

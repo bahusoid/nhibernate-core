@@ -17,7 +17,7 @@ namespace NHibernate.Criterion
 		{
 			if (criteriaQuery is CriteriaQueryTranslator translator)
 			{
-				return translator.TryGetSqlAlias(aliasName, out alias);
+				return translator.TryGetSQLAlias(aliasName, out alias);
 			}
 
 			alias = null;
