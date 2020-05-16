@@ -559,33 +559,9 @@ namespace NHibernate.SqlCommand
 		{
 			foreach (var part in this)
 			{
-				yield return part is string content
+				var content = part as string;
+				yield return content != null
 					? content.Replace(oldValue, newValue)
-					: part;
-			}
-		}
-
-		/// <summary>
-		/// Replaces all occurrences of a specified <see cref="String"/> in this instance, 
-		/// with another specified <see cref="String"/> .
-		/// </summary>
-		/// <param name="pattern">A String to be replaced.</param>
-		/// <param name="evaluator">A String to replace all occurrences of oldValue. </param>
-		/// <returns>
-		/// A new SqlString with oldValue replaced by the newValue.  The new SqlString is 
-		/// in the compacted form.
-		/// </returns>
-		internal SqlString Replace(Regex pattern, MatchEvaluator evaluator)
-		{
-			return new SqlString(ReplaceParts(pattern, evaluator));
-		}
-
-		private IEnumerable<object> ReplaceParts(Regex pattern, MatchEvaluator evaluator)
-		{
-			foreach (var part in this)
-			{
-				yield return part is string content
-					? pattern.Replace(content, evaluator)
 					: part;
 			}
 		}
