@@ -971,8 +971,7 @@ namespace NHibernate.Test.Criteria
 				Student studentSubquery = null;
 				var subquery = QueryOver.Of(() => studentSubquery)
 				         .And(
-					         Restrictions.Sql("{e}.studentId = 667 and {studentSubquery}.studentId = 667")
-					                   .AddAliases("e", "studentSubquery")).Select(Projections.Id());
+					         Restrictions.Sql("{e}.studentId = 667 and {studentSubquery}.studentId = 667")).Select(Projections.Id());
 				         
 				var uniqueResult = await (s.CreateCriteria(typeof(Student))
 				                    .Add(Subqueries.Exists(subquery.DetachedCriteria))
@@ -993,7 +992,7 @@ namespace NHibernate.Test.Criteria
 							                    TypeFactory.HeuristicType(typeof(short)),
 							                    TypeFactory.HeuristicType(typeof(string)),
 							                    TypeFactory.HeuristicType(typeof(string)),
-						                    }).AddAliases("e", "c"))
+						                    }))
 				                    .UniqueResultAsync());
 
 				Assert.That(uniqueResult, Is.Not.Null);

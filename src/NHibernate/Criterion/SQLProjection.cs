@@ -1,5 +1,5 @@
 using System;
-using System.Collections.Generic;
+using System.Text.RegularExpressions;
 using NHibernate.SqlCommand;
 using NHibernate.Type;
 
@@ -20,7 +20,6 @@ namespace NHibernate.Criterion
 		private readonly string[] aliases;
 		private readonly string[] columnAliases;
 		private readonly bool grouped;
-		private List<string> _criteriaAliases;
 
 		internal SQLProjection(string sql, string[] columnAliases, IType[] types)
 			: this(sql, null, columnAliases, types)
@@ -42,20 +41,6 @@ namespace NHibernate.Criterion
 			return GetSqlString(criteria, criteriaQuery, sql);
 		}
 
-		/// <summary>
-		/// Provide list of criteria aliases that's used in SQL projection.
-		/// To be replaced with SQL aliases.
-		/// </summary>
-		public SQLProjection AddAliases(params string[] criteriaAliases)
-		{
-			if(_criteriaAliases == null)
-				_criteriaAliases = new List<string>();
-
-			_criteriaAliases.AddRange(criteriaAliases);
-
-			return this;
-		}
-
 		public SqlString ToGroupSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery)
 		{
 			return GetSqlString(criteria, criteriaQuery, groupBy);
@@ -63,24 +48,31 @@ namespace NHibernate.Criterion
 
 		private SqlString GetSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery, string sqlTemplate)
 		{
-			return GetSqlString(criteria, criteriaQuery, new SqlString(sqlTemplate), _criteriaAliases);
+			return GetSqlString(criteria, criteriaQuery, new SqlString(sqlTemplate));
 		}
 
-		internal static SqlString GetSqlString(
-			ICriteria criteria,
-			ICriteriaQuery criteriaQuery,
-			SqlString sqlTemplate,
-			List<string> criteriaAliases)
+		internal static SqlString GetSqlString(ICriteria criteria, ICriteriaQuery criteriaQuery, SqlString sqlTemplate)
 		{
-			if (criteriaAliases != null)
-			{
-				foreach (var alias in criteriaAliases)
-				{
-					sqlTemplate = sqlTemplate.Replace("{" + alias + "}", criteriaQuery.GetSQLAlias(alias));
-				}
-			}
+			var oldValue = new Regex(@"\{(\w+)\}");
 
-			return sqlTemplate.Replace("{alias}", criteriaQuery.GetSQLAlias(criteria));
+			//TODO: Extract aliases when SQLCriterion/SQLProjection is constructed?
+			return sqlTemplate.Replace(
+				oldValue,
+				match =>
+				{
+					var aliasName = match.Groups[1].Value;
+					if (string.Equals(aliasName, "alias", StringComparison.Ordinal))
+					{
+						return criteriaQuery.GetSQLAlias(criteria);
+					}
+
+					if (criteriaQuery.TryGetSQLAlias(aliasName, out var alias))
+					{
+						return alias;
+					}
+
+					return match.Value;
+				});
 		}
 
 		public override string ToString()

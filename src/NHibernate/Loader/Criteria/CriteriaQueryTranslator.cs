@@ -863,16 +863,21 @@ namespace NHibernate.Loader.Criteria
 			return GetEntityName(subcriteria);
 		}
 
-		//TODO 6.0: Add to ICriteriaQuery interface
-		public string GetSQLAlias(string criteriaAlias)
+		public bool TryGetSqlAlias(string criteriaAlias, out string alias)
 		{
 			if (aliasCriteriaMap.TryGetValue(criteriaAlias, out var criteria))
-				return GetSQLAlias(criteria);
+			{
+				alias = GetSQLAlias(criteria);
+				return true;
+			}
 
 			if (outerQueryTranslator != null)
-				return outerQueryTranslator.GetSQLAlias(criteriaAlias);
+			{
+				return outerQueryTranslator.TryGetSQLAlias(criteriaAlias, out alias);
+			}
 
-			throw new InvalidOperationException("Could not find criteria by alias: " + criteriaAlias);
+			alias = null;
+			return false;
 		}
 
 		public string GetSQLAlias(ICriteria criteria, string propertyName)
