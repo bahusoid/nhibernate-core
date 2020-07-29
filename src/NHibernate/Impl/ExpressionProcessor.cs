@@ -282,19 +282,16 @@ namespace NHibernate.Impl
 		/// </summary>
 		public static ProjectionInfo FindMemberProjection(Expression expression)
 		{
-			if (!IsMemberExpression(expression))
-				return AsArithmeticProjection(expression)
-					?? ProjectionInfo.ForProjection(Projections.Constant(FindValue(expression), NHibernateUtil.GuessType(expression.Type)));
-
 			var unwrapExpression = UnwrapConvertExpression(expression);
 			if (unwrapExpression != null)
 			{
 				return FindMemberProjection(unwrapExpression);
 			}
 
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression != null)
+			if (expression.NodeType == ExpressionType.Call)
 			{
+				var methodCallExpression = (MethodCallExpression) expression;
+
 				var signature = Signature(methodCallExpression.Method);
 				Func<Expression, IProjection> processor;
 				if (_customProjectionProcessors.TryGetValue(signature, out processor))
@@ -302,9 +299,11 @@ namespace NHibernate.Impl
 					return ProjectionInfo.ForProjection(processor(methodCallExpression));
 				}
 			}
-			var memberExpression = expression as MemberExpression;
-			if (memberExpression != null)
+
+			if (expression.NodeType == ExpressionType.MemberAccess)
 			{
+				var memberExpression = (MemberExpression) expression;
+
 				var signature = Signature(memberExpression.Member);
 				Func<Expression, IProjection> processor;
 				if (_customProjectionProcessors.TryGetValue(signature, out processor))
@@ -313,50 +312,39 @@ namespace NHibernate.Impl
 				}
 			}
 
-			return ProjectionInfo.ForProperty(FindMemberExpression(expression));
+			var propertyPath = AsMemberExpression(expression, true, true);
+			if (propertyPath != null)
+				return ProjectionInfo.ForProperty(propertyPath);
+
+			var asArithmetic = AsArithmeticProjection(expression);
+			if (asArithmetic != null)
+				return asArithmetic;
+
+			return ProjectionInfo.ForProjection(Projections.Constant(FindValue(expression), NHibernateUtil.GuessType(expression.Type)));
 		}
 
 		private static Expression UnwrapConvertExpression(Expression expression)
 		{
-			if (expression is UnaryExpression unaryExpression)
-			{
-				if (!IsConversion(unaryExpression.NodeType))
-				{
-					if (IsSupportedUnaryExpression(unaryExpression))
-						return null;
-
-					throw new ArgumentException("Cannot interpret member from " + expression, nameof(expression));
-				}
-				return unaryExpression.Operand;
-			}
-
-			return null;
-		}
-
-		private static bool IsSupportedUnaryExpression(UnaryExpression expression)
-		{
-			return expression.NodeType == ExpressionType.Negate;
+			return
+				IsConversion(expression.NodeType)
+					? ((UnaryExpression) expression).Operand
+					: null;
 		}
 
 		private static ProjectionInfo AsArithmeticProjection(Expression expression)
 		{
-			if (!(expression is BinaryExpression be))
+			if (expression.NodeType == ExpressionType.Negate)
 			{
-				if (expression is UnaryExpression unary && unary.NodeType == ExpressionType.Negate)
-				{
-					return ProjectionInfo.ForProjection(
-						new SqlFunctionProjection(_unaryNegateTemplate, TypeFactory.HeuristicType(unary.Type), FindMemberProjection(unary.Operand).AsProjection()));
-				}
-
-				var unwrapExpression = UnwrapConvertExpression(expression);
-				return unwrapExpression != null ? AsArithmeticProjection(unwrapExpression) : null;
+				return ProjectionInfo.ForProjection(
+					new SqlFunctionProjection(_unaryNegateTemplate, TypeFactory.HeuristicType(expression.Type), FindMemberProjection(((UnaryExpression) expression).Operand).AsProjection()));
 			}
 
-			if (!_binaryArithmethicTemplates.TryGetValue(be.NodeType, out var template))
+			if (!_binaryArithmethicTemplates.TryGetValue(expression.NodeType, out var template))
 			{
 				return null;
 			}
 
+			var be = (BinaryExpression) expression;
 			return ProjectionInfo.ForProjection(
 				new SqlFunctionProjection(
 					template,
@@ -370,8 +358,11 @@ namespace NHibernate.Impl
 
 		private static bool IsCompilerGeneratedMemberExpressionOfCompilerGeneratedClass(Expression expression)
 		{
-			var memberExpression = expression as MemberExpression;
-			if (memberExpression != null && memberExpression.Member.DeclaringType != null)
+			if (expression.NodeType != ExpressionType.MemberAccess)
+				return false;
+
+			var memberExpression = (MemberExpression) expression;
+			if (memberExpression.Member.DeclaringType != null)
 			{
 				return Attribute.GetCustomAttribute(memberExpression.Member.DeclaringType, typeof(CompilerGeneratedAttribute)) != null 
 					&& GeneratedMemberNameRegex.IsMatch(memberExpression.Member.Name);
@@ -388,9 +379,17 @@ namespace NHibernate.Impl
 		/// <returns>The name of the member property</returns>
 		public static string FindMemberExpression(Expression expression)
 		{
-			var memberExpression = expression as MemberExpression;
-			if (memberExpression != null)
+			var memberExpression = AsMemberExpression(expression, false, true);
+			if(memberExpression == null) 
+				throw new ArgumentException("Could not determine member from " + expression, nameof(expression));
+			return memberExpression;
+		}
+
+		private static string AsMemberExpression(Expression expression, bool check, bool forceParam)
+		{
+			if (expression.NodeType == ExpressionType.MemberAccess)
 			{
+				var memberExpression = (MemberExpression) expression;
 				var parentExpression = memberExpression.Expression;
 				if (parentExpression != null)
 				{
@@ -401,7 +400,7 @@ namespace NHibernate.Impl
 						{
 							// it's a Nullable<T>, so ignore any .Value
 							if (memberExpression.Member.Name == "Value")
-								return FindMemberExpression(parentExpression);
+								return AsMemberExpression(parentExpression, check, forceParam);
 						}
 
 						if (IsCompilerGeneratedMemberExpressionOfCompilerGeneratedClass(parentExpression))
@@ -409,45 +408,54 @@ namespace NHibernate.Impl
 							return memberExpression.Member.Name;
 						}
 
-						return FindMemberExpression(parentExpression) + "." + memberExpression.Member.Name;
+						var asMemberExpression = AsMemberExpression(parentExpression, check, false);
+						if (asMemberExpression == null)
+							return null;
+						return asMemberExpression + "." + memberExpression.Member.Name;
 					}
+
 					if (IsConversion(parentExpression.NodeType))
 					{
-						return (FindMemberExpression(parentExpression) + "." + memberExpression.Member.Name).TrimStart('.');
+						var asMemberExpression = AsMemberExpression(parentExpression, check, false);
+						if (asMemberExpression == null)
+							return null;
+						return asMemberExpression == string.Empty
+							? memberExpression.Member.Name
+							: asMemberExpression + "." + memberExpression.Member.Name;
 					}
+
 				}
+				if (check 
+					&& parentExpression?.NodeType != ExpressionType.Parameter 
+					&& (forceParam || EvaluatesToNull(memberExpression) == false))
+					return null;
 
 				return memberExpression.Member.Name;
 			}
 
-			var unaryExpression = expression as UnaryExpression;
-			if (unaryExpression != null)
-			{
-				if (!IsConversion(unaryExpression.NodeType))
-					throw new ArgumentException("Cannot interpret member from " + expression, nameof(expression));
+			var unwrapConvertExpression = UnwrapConvertExpression(expression);
+			if (unwrapConvertExpression != null)
+				return AsMemberExpression(unwrapConvertExpression, check, forceParam);
 
-				return FindMemberExpression(unaryExpression.Operand);
-			}
-
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression != null)
+			if (expression.NodeType == ExpressionType.Call)
 			{
+				var methodCallExpression = (MethodCallExpression) expression;
+
 				if (methodCallExpression.Method.Name == "GetType")
-					return ClassMember(methodCallExpression.Object);
+					return AsClassMember(methodCallExpression.Object);
 
 				if (methodCallExpression.Method.Name == "get_Item")
-					return FindMemberExpression(methodCallExpression.Object);
+					return AsMemberExpression(methodCallExpression.Object, check, forceParam);
 
 				if (methodCallExpression.Method.Name == "First")
-					return FindMemberExpression(methodCallExpression.Arguments[0]);
+					return AsMemberExpression(methodCallExpression.Arguments[0], check, forceParam);
 
-				throw new ArgumentException("Unrecognised method call in expression " + methodCallExpression, nameof(expression));
+				return null;
 			}
 
-			if (expression is ParameterExpression)
-				return "";
-
-			throw new ArgumentException("Could not determine member from " + expression, nameof(expression));
+			if (expression.NodeType == ExpressionType.Parameter)
+				return string.Empty;
+			return null;
 		}
 
 		/// <summary>
@@ -468,11 +476,10 @@ namespace NHibernate.Impl
 		/// <returns>Evaluated detached criteria</returns>
 		public static DetachedCriteria FindDetachedCriteria(Expression expression)
 		{
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression == null)
+			if (expression.NodeType != ExpressionType.Call)
 				throw new ArgumentException("right operand should be detachedQueryInstance.As<T>() - " + expression, nameof(expression));
 
-			return ((QueryOver) FindValue(methodCallExpression.Object)).DetachedCriteria;
+			return ((QueryOver) FindValue(((MethodCallExpression) expression).Object)).DetachedCriteria;
 		}
 
 		private static bool EvaluatesToNull(Expression expression)
@@ -482,80 +489,22 @@ namespace NHibernate.Impl
 
 		private static System.Type FindMemberType(Expression expression)
 		{
-			var memberExpression = expression as MemberExpression;
-			if (memberExpression != null)
+			if (IsConversion(expression.NodeType))
 			{
-				return memberExpression.Type;
+				return FindMemberType(((UnaryExpression) expression).Operand);
 			}
 
-			var unwrapExpression = UnwrapConvertExpression(expression);
-			if (unwrapExpression != null)
+			if (expression.NodeType == ExpressionType.Call)
 			{
-				return FindMemberType(unwrapExpression);
-			}
-
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression != null)
-			{
+				var methodCallExpression = (MethodCallExpression) expression;
 				return methodCallExpression.Method.ReturnType;
 			}
 
-			if (expression is BinaryExpression || expression is UnaryExpression)
-				return expression.Type;
-
-			throw new ArgumentException("Could not determine member type from " + expression, nameof(expression));
-		}
-
-		private static bool IsMemberExpression(Expression expression)
-		{
-			if (expression is ParameterExpression)
-				return true;
-
-			var memberExpression = expression as MemberExpression;
-			if (memberExpression != null)
-			{
-				if (memberExpression.Expression == null)
-					return false; // it's a member of a static class
-
-				if (IsMemberExpression(memberExpression.Expression))
-					return true;
-
-				// if the member has a null value, it was an alias
-				return EvaluatesToNull(memberExpression.Expression);
-			}
-
-			var unwrapExpression = UnwrapConvertExpression(expression);
-			if (unwrapExpression != null)
-			{
-				return IsMemberExpression(unwrapExpression);
-			}
-
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression != null)
-			{
-				string signature = Signature(methodCallExpression.Method);
-				if (_customProjectionProcessors.ContainsKey(signature))
-					return true;
-
-				if (methodCallExpression.Method.Name == "First")
-				{
-					if (IsMemberExpression(methodCallExpression.Arguments[0]))
-						return true;
-
-					return EvaluatesToNull(methodCallExpression.Arguments[0]);
-				}
-
-				if (methodCallExpression.Method.Name == "GetType"
-					|| methodCallExpression.Method.Name == "get_Item")
-				{
-					if (IsMemberExpression(methodCallExpression.Object))
-						return true;
-
-					return EvaluatesToNull(methodCallExpression.Object);
-				}
-			}
-
-			return false;
+			return expression.Type;
+			// if (expression is BinaryExpression || expression is UnaryExpression)
+			// 	return expression.Type;
+			//
+			// throw new ArgumentException("Could not determine member type from " + expression, nameof(expression));
 		}
 
 		private static bool IsConversion(ExpressionType expressionType)
@@ -655,15 +604,15 @@ namespace NHibernate.Impl
 				ProcessExpression(expression.Right));
 		}
 
-		private static ICriterion ProcessBinaryExpression(BinaryExpression expression)
+		private static ICriterion ProcessAsBinaryExpression(Expression expression)
 		{
 			switch (expression.NodeType)
 			{
 				case ExpressionType.AndAlso:
-					return ProcessAndExpression(expression);
+					return ProcessAndExpression((BinaryExpression) expression);
 
 				case ExpressionType.OrElse:
-					return ProcessOrExpression(expression);
+					return ProcessOrExpression((BinaryExpression) expression);
 
 				case ExpressionType.Equal:
 				case ExpressionType.NotEqual:
@@ -671,52 +620,54 @@ namespace NHibernate.Impl
 				case ExpressionType.GreaterThanOrEqual:
 				case ExpressionType.LessThan:
 				case ExpressionType.LessThanOrEqual:
-					return ProcessMemberExpression(expression.Left, expression.Right, expression.NodeType);
+					var be = (BinaryExpression) expression;
+					return ProcessMemberExpression(be.Left, be.Right, expression.NodeType);
 				default:
-					throw new NotImplementedException("Unhandled binary expression: " + expression.NodeType + ", " + expression);
+					return null;
 			}
 		}
 
-		private static ICriterion ProcessBooleanExpression(Expression expression)
+		private static ICriterion ProcessAsBooleanExpression(Expression expression)
 		{
-			if (expression is MemberExpression)
+			if (expression.NodeType == ExpressionType.MemberAccess)
 			{
 				return Restrictions.Eq(FindMemberExpression(expression), true);
 			}
 
-			var unaryExpression = expression as UnaryExpression;
-			if (unaryExpression != null)
+			if (expression.NodeType == ExpressionType.Not)
 			{
-				if (unaryExpression.NodeType != ExpressionType.Not)
-					throw new ArgumentException("Cannot interpret member from " + expression, nameof(expression));
+				var unaryExpression = (UnaryExpression) expression;
 
-				if (IsMemberExpression(unaryExpression.Operand))
-					return Restrictions.Eq(FindMemberExpression(unaryExpression.Operand), false);
-				else
-					return Restrictions.Not(ProcessExpression(unaryExpression.Operand));
+				var propertyPath = AsMemberExpression(unaryExpression.Operand, true, true);
+				return !string.IsNullOrEmpty(propertyPath)
+					? Restrictions.Eq(propertyPath, false)
+					: Restrictions.Not(ProcessExpression(unaryExpression.Operand));
 			}
 
-			var methodCallExpression = expression as MethodCallExpression;
-			if (methodCallExpression != null)
+			if (expression.NodeType == ExpressionType.Call)
 			{
-				return ProcessCustomMethodCall(methodCallExpression);
+				return ProcessCustomMethodCall((MethodCallExpression)expression);
 			}
 
-			var typeBinaryExpression = expression as TypeBinaryExpression;
-			if (typeBinaryExpression != null)
+			if (expression.NodeType == ExpressionType.TypeIs)
 			{
-				return Restrictions.Eq(ClassMember(typeBinaryExpression.Expression), typeBinaryExpression.TypeOperand.FullName);
+				var typeBinaryExpression = (TypeBinaryExpression) expression;
+				return Restrictions.Eq(AsClassMember(typeBinaryExpression.Expression), typeBinaryExpression.TypeOperand.FullName);
 			}
 
-			throw new ArgumentException(
-				"Could not determine member type from " + expression.NodeType + ", " + expression + ", " + expression.GetType(),
-				nameof(expression));
+			return null;
 		}
 
-		private static string ClassMember(Expression expression)
+		private static string AsClassMember(Expression expression)
 		{
 			if (expression.NodeType == ExpressionType.MemberAccess)
-				return FindMemberExpression(expression) + ".class";
+			{
+				var asMember = AsMemberExpression(expression, true, false);
+				if (asMember == null)
+					return null;
+				return asMember + ".class";
+
+			}
 			
 			return "class";
 		}
@@ -748,11 +699,17 @@ namespace NHibernate.Impl
 
 		private static ICriterion ProcessExpression(Expression expression)
 		{
-			var binaryExpression = expression as BinaryExpression;
-			if (binaryExpression != null)
-				return ProcessBinaryExpression(binaryExpression);
-			
-			return ProcessBooleanExpression(expression);
+			var asBinary = ProcessAsBinaryExpression(expression);
+			if (asBinary != null)
+				return asBinary;
+
+			var asBoolean = ProcessAsBooleanExpression(expression);
+			if (asBoolean != null)
+				return asBoolean;
+
+			throw new ArgumentException(
+				"Could not determine member type from " + expression.NodeType + ", " + expression + ", " + expression.GetType(),
+				nameof(expression));
 		}
 
 		private static ICriterion ProcessLambdaExpression(LambdaExpression expression)
