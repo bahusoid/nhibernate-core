@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernate.Test"
+                   namespace="NHibernate.Test.NHSpecificTest.NH2116" default-lazy="false">
+
+  <class name="ClientTradingLimitDetail" table="client_trading_limit_detail">
+
+    <id name="TradingLimitDetailID" column="ctd_trading_limit_detail_id" type="Int32" unsaved-value="0">
+      <generator class="native" />
+    </id>
+
+    <property name="OrderID" column="ctd_order_id" type="Int32" not-null="true" />
+    <property name="SubOrderID" column="ctd_sub_order_id" type="Int32" not-null="true" />
+    <property name="SubOrderReqID" column="ctd_sub_order_req_id" type="Int32" not-null="true" />
+    <property name="OrderedValue" column="ctd_ordered_value" type="Decimal" not-null="true" />
+    <property name="TradingLimitBalance" column="ctd_trading_limit_balance" type="Decimal" not-null="true" />
+
+    <!-- Foreign Key(s) -->
+    <many-to-one name="ClientTradingLimit" class="ClientTradingLimit" column="ctd_trading_limit_id" not-null="true"/>
+
+  </class>
+
+  <class name="ClientTradingLimit" table="client_trading_limit">
+
+    <id name="TradingLimitID" column="ctm_trading_limit_id" type="Int32" unsaved-value="0">
+      <generator class="native" />
+    </id>
+
+    <property name="ClientID" column="ctm_client_id" type="Int32" not-null="true" />
+    <property name="OpenBalance" column="ctm_open_balance" type="Decimal" not-null="true" />
+    <property name="CurrencyID" column="ctm_currency_id" type="Int32" not-null="true" />
+    <property name="WarningThreshold" column="ctm_warning_threshold" type="Decimal" not-null="true" />
+
+    <bag name="TradingLimitDetails" inverse="true" cascade="all">
+      <key column="ctd_trading_limit_id" />
+      <one-to-many class="ClientTradingLimitDetail" />
+      <loader query-ref="LastTradingLimitDetail"/>
+    </bag>
+
+  </class>
+
+  <sql-query name="LastTradingLimitDetail">
+    <load-collection alias="ctd" role="ClientTradingLimit.TradingLimitDetails" />
+    SELECT TOP 1 {ctd.*}
+    FROM client_trading_limit_detail ctd
+    WHERE ctd.ctd_trading_limit_id = :id
+    ORDER BY ctd.ctd_trading_limit_detail_id DESC
+  </sql-query>
+</hibernate-mapping>
