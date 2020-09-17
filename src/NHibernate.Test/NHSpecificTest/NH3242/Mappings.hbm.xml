@@ -1,0 +1,30 @@
+﻿<?xml version="1.0" encoding="utf-8" ?>
+<hibernate-mapping xmlns="urn:nhibernate-mapping-2.2" assembly="NHibernate.Test"
+                   namespace="NHibernate.Test.NHSpecificTest.NH3242"
+                   default-lazy="false">
+  <class name="Booking">
+    <id name="BookingID">
+      <generator class="identity" />
+    </id>
+    <property name="Type" type="BookingTypes" />
+    <property name="DateBooked" type="DateTime" />
+    <joined-subclass name="BookingGuest">
+      <key column="Id" />
+      <property name="FullName" />
+    </joined-subclass>
+    <joined-subclass name="BookingUser" table="BookingsUser">
+      <key column="Id" />
+      <many-to-one class="User" column="UserId" fetch="join" name="User" />
+    </joined-subclass>
+  </class>
+  <class name="User" table="`User`">
+    <id name="UserID">
+      <generator class="identity" />
+    </id>
+    <property name="FullName" />
+    <bag cascade="none" inverse="true" name="Bookings">
+      <key column="UserId" />
+      <one-to-many class="BookingUser" />
+    </bag>
+  </class>
+</hibernate-mapping>
