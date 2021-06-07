@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        i: [1,2,3,4,5]
+        i: [1,2,3,4,5,6,7,8,9,10]
         DB: [Firebird]
         CONNECTION_STRING: ["DataSource=localhost;Database=nhibernate;User=SYSDBA;Password=nhibernate;charset=utf8;"]
 
