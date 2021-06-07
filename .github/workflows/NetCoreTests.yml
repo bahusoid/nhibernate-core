@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        DB: [SQLite]
+        DB: [SqlServer2008, PostgreSQL, Firebird, MySQL, SQLite]
         os: [ubuntu-latest, windows-latest]        
         include:
           - DB: SqlServer2008
@@ -24,7 +24,7 @@ jobs:
     continue-on-error: ${{matrix.ALLOW_FAILURE == true}}
     env:
       LANG: en-US.UTF-8 #default POSIX locale doesn't support ignore case comparisons
-    name: ${{matrix.DB}}
+    name: ${{matrix.DB}} - ${{matrix.os}}
 
     steps:
     - name: Set up SqlServer
