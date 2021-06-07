@@ -7,6 +7,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        DB: [SQLite]
+        os: [ubuntu-latest, windows-latest]        
         include:
           - DB: SqlServer2008
             CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=4096;"
@@ -18,7 +20,7 @@ jobs:
             CONNECTION_STRING: "Server=localhost;Uid=root;Password=nhibernate;Database=nhibernate;Old Guids=True;"
             ALLOW_FAILURE: true
           - DB: SQLite
-    runs-on: ubuntu-latest
+    runs-on: ${{matrix.os}}
     continue-on-error: ${{matrix.ALLOW_FAILURE == true}}
     env:
       LANG: en-US.UTF-8 #default POSIX locale doesn't support ignore case comparisons
