@@ -22,7 +22,7 @@ jobs:
     - name: Set up SqlServer Win
       if: matrix.DB == 'SqlServer2008'
       run: |
-        docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=P@ssw0rd" -e "MSSQL_PID=Express" -p 1433:1433 -d --name sqlexpress microsoft/mssql-server-windows-express
+        docker run -e "ACCEPT_EULA=Y" -e "SA_PASSWORD=P@ssw0rd" -e "MSSQL_PID=Express" -p 1433:1433 -d --name sqlexpress christianacca/mssql-server-windows-express
 
     - uses: actions/checkout@v2
     - name: Setup .NET
