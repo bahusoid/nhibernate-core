@@ -9,7 +9,7 @@ jobs:
       matrix:
         include:
           - DB: SqlServer2008
-            CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=4096;"
+            CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=12000;"
           - DB: PostgreSQL
             CONNECTION_STRING: "Host=localhost;Username=nhibernate;Password=nhibernate;Database=nhibernate;Enlist=true;"
           - DB: Firebird
