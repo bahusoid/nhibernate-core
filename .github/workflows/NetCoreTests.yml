@@ -7,9 +7,15 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        Idx: [1,2,3,4,5,6,7,8,9,10]
+        name: [SqlServer4096,SqlServer12000]
         include:
-          - DB: SqlServer2008
+          - name: SqlServer12000
+            DB: SqlServer2008
             CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=12000;"
+          - name: SqlServer4096
+            DB: SqlServer2008
+            CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=4096;"
           - DB: PostgreSQL
             CONNECTION_STRING: "Host=localhost;Username=nhibernate;Password=nhibernate;Database=nhibernate;Enlist=true;"
           - DB: Firebird
