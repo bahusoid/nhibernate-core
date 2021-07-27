@@ -418,17 +418,24 @@ namespace NHibernate.Tuple.Entity
 
 		private void MapPropertyToIndex(string path, Mapping.Property prop, int i)
 		{
-			var propPath = !string.IsNullOrEmpty(path) ? $"{path}.{prop.Name}" : prop.Name;
+			MapPropertyToIndex(path, prop.Name, i, prop.Type);
+		}
+
+		private void MapPropertyToIndex(string path, string propName, int i, IType propertyType)
+		{
+			var propPath = !string.IsNullOrEmpty(path) ? path + "." + propName : propName;
 			propertyIndexes[propPath] = i;
-			_propertyTypes[propPath] = prop.Type;
-			if (!(prop.Value is Mapping.Component comp))
+			_propertyTypes[propPath] = propertyType;
+
+			if (!propertyType.IsComponentType)
 			{
 				return;
 			}
 
-			foreach (var subprop in comp.PropertyIterator)
+			var componentType = (IAbstractComponentType) propertyType;
+			for (int j = 0; j < componentType.PropertyNames.Length; j++)
 			{
-				MapPropertyToIndex(propPath, subprop, i);
+				MapPropertyToIndex(propPath, componentType.PropertyNames[j], i, componentType.Subtypes[j]);
 			}
 		}
 
