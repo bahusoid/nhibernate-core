@@ -10,18 +10,24 @@
 
 using System;
 using System.Collections.Generic;
+using System.Threading;
+using System.Threading.Tasks;
 using NHibernate.Engine;
 using NHibernate.Persister.Collection;
 using NHibernate.Util;
 
 namespace NHibernate.Loader.Collection
 {
-	using System.Threading.Tasks;
-	using System.Threading;
-	public partial class BatchingCollectionInitializer : ICollectionInitializer
+
+	public abstract partial class AbstractBatchingCollectionInitializer : ICollectionInitializer
 	{
 
-		public async Task InitializeAsync(object id, ISessionImplementor session, CancellationToken cancellationToken)
+		public abstract Task InitializeAsync(object id, ISessionImplementor session, CancellationToken cancellationToken);
+	}
+	public partial class BatchingCollectionInitializer : AbstractBatchingCollectionInitializer
+	{
+
+		public override async Task InitializeAsync(object id, ISessionImplementor session, CancellationToken cancellationToken)
 		{
 			cancellationToken.ThrowIfCancellationRequested();
 			object[] batch =

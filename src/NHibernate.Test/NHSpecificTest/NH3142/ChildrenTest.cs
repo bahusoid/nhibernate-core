@@ -60,6 +60,7 @@ namespace NHibernate.Test.NHSpecificTest.NH3142
 		[Test]
 		public void ChildrenCollectionOfAllParentsShouldContainsThreeElements()
 		{
+			using(new SqlLogSpy())
 			using (var session = OpenSession())
 			{
 				var entities = session.CreateQuery("from DomainParent").List<DomainParent>();

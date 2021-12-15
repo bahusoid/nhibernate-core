@@ -117,6 +117,12 @@ namespace NHibernate.Engine
 		/// <value>An <see cref="IDictionary"/> of lock modes.</value>
 		public IDictionary<string, LockMode> LockModes { get; set; }
 
+		// [field: NonSerialized]
+		// internal SqlString DynamicSql { get; set; }
+		//
+		// [field: NonSerialized]
+		// internal List<IParameterSpecification> DynamicParamSpec { get; set; }
+
 		public bool IsReadOnlyInitialized { get; private set; }
 
 		public bool Cacheable { get; set; }
@@ -228,5 +234,7 @@ namespace NHibernate.Engine
 		{
 			return (CacheMode ?? session.CacheMode).HasFlag(NHibernate.CacheMode.Put);
 		}
+
+
 	}
 }

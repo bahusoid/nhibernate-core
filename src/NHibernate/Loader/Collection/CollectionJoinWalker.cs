@@ -16,7 +16,7 @@ namespace NHibernate.Loader.Collection
 		public CollectionJoinWalker(ISessionFactoryImplementor factory, IDictionary<string, IFilter> enabledFilters)
 			: base(factory, enabledFilters) {}
 
-		protected SqlStringBuilder WhereString(string alias, string[] columnNames, SqlString subselect, int batchSize)
+		protected virtual SqlStringBuilder WhereString(string alias, string[] columnNames, SqlString subselect, int batchSize)
 		{
 			if (subselect == null)
 			{

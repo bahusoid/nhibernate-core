@@ -71,6 +71,7 @@ namespace NHibernate.Test.NHSpecificTest.NH3142
 		[Test]
 		public async Task ChildrenCollectionOfAllParentsShouldContainsThreeElementsAsync()
 		{
+			using(new SqlLogSpy())
 			using (var session = OpenSession())
 			{
 				var entities = await (session.CreateQuery("from DomainParent").ListAsync<DomainParent>());

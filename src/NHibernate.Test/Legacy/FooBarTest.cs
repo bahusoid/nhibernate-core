@@ -1175,6 +1175,7 @@ namespace NHibernate.Test.Legacy
 				s.Flush();
 			}
 
+			using(new SqlLogSpy())
 			using (ISession s = OpenSession())
 			{
 				baz = (Baz) s.Load(typeof(Baz), baz.Code);
