@@ -25,6 +25,8 @@ namespace NHibernate.Test.NHSpecificTest.NH3530
 	[TestFixture]
 	public class DynamicBatchFetchStyleFixtureAsync : TestCaseMappingByCode
 	{
+		private readonly List<object> _ids = new List<object>();
+
 		protected override void Configure(Configuration configuration)
 		{
 			base.Configure(configuration);
@@ -128,8 +130,6 @@ namespace NHibernate.Test.NHSpecificTest.NH3530
 		{
 			return EntityMappings.CreateMapping();
 		}
-
-		private readonly List<object> _ids = new List<object>();
 
 		private async Task PrepareEntitiesAsync(int count, CancellationToken cancellationToken = default(CancellationToken))
 		{

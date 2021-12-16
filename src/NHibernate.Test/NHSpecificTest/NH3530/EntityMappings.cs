@@ -24,7 +24,7 @@ namespace NHibernate.Test.NHSpecificTest.NH3530
 									km.Column("ParentId");
 									km.ForeignKey("none");
 								});
-							m.BatchSize(4);
+							m.BatchSize(10);
 							m.Cascade(Mapping.ByCode.Cascade.All);
 						},
 						xr => xr.OneToMany());
