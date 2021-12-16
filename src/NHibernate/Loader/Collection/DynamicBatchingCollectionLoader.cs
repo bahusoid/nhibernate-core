@@ -13,7 +13,6 @@ namespace NHibernate.Loader.Collection
 
 		public DynamicBatchingCollectionLoader(IQueryableCollection collectionPersister, ISessionFactoryImplementor factory, IDictionary<string, IFilter> enabledFilters) : base(collectionPersister, factory, enabledFilters)
 		{
-
 			JoinWalker walker = BuildJoinWalker(collectionPersister, factory, enabledFilters);
 			InitFromWalker(walker);
 			_alias = StringHelper.GenerateAlias(collectionPersister.Role, 0);
@@ -50,7 +49,6 @@ namespace NHibernate.Loader.Collection
 
 		private class DynamicBasicCollectionJoinWalker : BasicCollectionJoinWalker
 		{
-
 			public DynamicBasicCollectionJoinWalker(IQueryableCollection collectionPersister, ISessionFactoryImplementor factory, IDictionary<string, IFilter> enabledFilters) : base(collectionPersister, 1, null, factory, enabledFilters)
 			{
 			}

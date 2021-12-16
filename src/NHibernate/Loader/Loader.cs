@@ -1703,12 +1703,9 @@ namespace NHibernate.Loader
 			}
 			catch (Exception sqle)
 			{
-				throw ADOExceptionHelper.Convert(
-					Factory.SQLExceptionConverter,
-					sqle,
-					"could not load an entity batch: "
-					+ MessageHelper.InfoString(persister, ids, Factory),
-					SqlString);
+				throw ADOExceptionHelper.Convert(Factory.SQLExceptionConverter, sqle,
+												"could not load an entity batch: "
+												+ MessageHelper.InfoString(persister, ids, Factory), SqlString);
 				// NH: Hibernate3 passes EntityPersisters[0] instead of persister, I think it's wrong.
 			}
 		}

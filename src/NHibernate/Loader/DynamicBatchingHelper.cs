@@ -16,6 +16,12 @@ namespace NHibernate.Loader
 
 		public static void ExpandBatchIdPlaceholder(SqlString sqlString, QueryParameters queryParameters, string[] columns, Dialect.Dialect dialect, out Parameter[] parameters, out SqlString result)
 		{
+			var wherePart = GenerateWherePart(queryParameters, columns, dialect, out parameters);
+			result = sqlString.ReplaceLast(DynamicBatchingHelper.BatchIdPlaceholder, wherePart);
+		}
+
+		private static SqlString GenerateWherePart(QueryParameters queryParameters, string[] columns, Dialect.Dialect dialect, out Parameter[] parameters)
+		{
 			var bogusParam = Parameter.Placeholder;
 			var wherePart = InExpression.GetSqlString(columns, queryParameters.PositionalParameterValues.Length, dialect, bogusParam);
 			var paramsCount = wherePart.GetParameterCount();
@@ -26,12 +32,12 @@ namespace NHibernate.Loader
 			}
 
 			wherePart.SubstituteBogusParameters(parameters, bogusParam);
-			result = sqlString.ReplaceLast(DynamicBatchingHelper.BatchIdPlaceholder, wherePart);
+			return wherePart;
 		}
 
 		public static int GetIdsToLoad(object[] batch, out object[] idsToLoad)
 		{
-			int numberOfIds = Array.IndexOf(batch, null); //TODO: IS IT SAFE?
+			int numberOfIds = Array.IndexOf(batch, null);
 			if (numberOfIds < 0)
 			{
 				idsToLoad = batch;

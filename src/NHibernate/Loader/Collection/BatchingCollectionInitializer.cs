@@ -1,7 +1,5 @@
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using NHibernate.Engine;
 using NHibernate.Persister.Collection;
 using NHibernate.Util;

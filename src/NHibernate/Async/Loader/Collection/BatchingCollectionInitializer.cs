@@ -10,14 +10,14 @@
 
 using System;
 using System.Collections.Generic;
-using System.Threading;
-using System.Threading.Tasks;
 using NHibernate.Engine;
 using NHibernate.Persister.Collection;
 using NHibernate.Util;
 
 namespace NHibernate.Loader.Collection
 {
+	using System.Threading.Tasks;
+	using System.Threading;
 	public partial class BatchingCollectionInitializer : AbstractBatchingCollectionInitializer
 	{
 

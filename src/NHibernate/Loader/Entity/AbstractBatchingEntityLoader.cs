@@ -12,8 +12,6 @@ namespace NHibernate.Loader.Entity
 	/// </summary>
 	public abstract partial class AbstractBatchingEntityLoader : IUniqueEntityLoader
 	{
-		//private static readonly INHibernateLogger Log = NHibernateLogger.For(typeof(AbstractBatchingEntityLoader));
-
 		protected IEntityPersister Persister { get; }
 
 		protected AbstractBatchingEntityLoader(IEntityPersister persister)
@@ -33,8 +31,6 @@ namespace NHibernate.Loader.Entity
 				OptionalObject = optionalObject,
 				OptionalEntityName = Persister.EntityName,
 				OptionalId = id,
-				//TODO
-				//LockModes = lockModes,
 			};
 			return qp;
 		}
