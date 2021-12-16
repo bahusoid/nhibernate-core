@@ -1187,7 +1187,6 @@ namespace NHibernate.Test.Legacy
 				await (s.FlushAsync());
 			}
 
-			using(new SqlLogSpy())
 			using (ISession s = OpenSession())
 			{
 				baz = (Baz) await (s.LoadAsync(typeof(Baz), baz.Code));
