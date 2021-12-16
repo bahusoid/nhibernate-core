@@ -18,12 +18,6 @@ using NHibernate.Util;
 
 namespace NHibernate.Loader.Collection
 {
-
-	public abstract partial class AbstractBatchingCollectionInitializer : ICollectionInitializer
-	{
-
-		public abstract Task InitializeAsync(object id, ISessionImplementor session, CancellationToken cancellationToken);
-	}
 	public partial class BatchingCollectionInitializer : AbstractBatchingCollectionInitializer
 	{
 

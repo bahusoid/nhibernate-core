@@ -1185,7 +1185,9 @@ namespace NHibernate.Loader
 
 			try
 			{
-				return await (DoQueryAndInitializeNonLazyCollectionsAsync(session, queryParameters, false, cancellationToken)).ConfigureAwait(false);
+				var results = await (DoQueryAndInitializeNonLazyCollectionsAsync(session, queryParameters, false, cancellationToken)).ConfigureAwait(false);
+				Log.Debug("done entity batch load");
+				return results;
 			}
 			catch (OperationCanceledException) { throw; }
 			catch (HibernateException)
@@ -1199,13 +1201,8 @@ namespace NHibernate.Loader
 					sqle,
 					"could not load an entity batch: "
 					+ MessageHelper.InfoString(persister, ids, Factory),
-					//queryParameters.DynamicSql ?? SqlString); //TODO
 					SqlString);
 				// NH: Hibernate3 passes EntityPersisters[0] instead of persister, I think it's wrong.
-			}
-			finally
-			{
-				Log.Debug("done entity batch load");
 			}
 		}
 

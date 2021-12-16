@@ -42,13 +42,8 @@ namespace NHibernate.Loader.Collection
 			{
 			}
 
-			protected override SqlStringBuilder WhereString(string alias, string[] columnNames, SqlString subselect, int batchSize)
+			protected override SqlStringBuilder WhereString(string alias, string[] columnNames, int batchSize)
 			{
-				if (subselect != null)
-				{
-					return base.WhereString(alias, columnNames, subselect, batchSize);
-				}
-
 				return DynamicBatchingHelper.BuildBatchFetchRestrictionFragment();
 			}
 		}
@@ -60,13 +55,8 @@ namespace NHibernate.Loader.Collection
 			{
 			}
 
-			protected override SqlStringBuilder WhereString(string alias, string[] columnNames, SqlString subselect, int batchSize)
+			protected override SqlStringBuilder WhereString(string alias, string[] columnNames, int batchSize)
 			{
-				if (subselect != null)
-				{
-					return base.WhereString(alias, columnNames, subselect, batchSize);
-				}
-
 				return DynamicBatchingHelper.BuildBatchFetchRestrictionFragment();
 			}
 		}
