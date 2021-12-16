@@ -351,32 +351,12 @@ namespace NHibernate.Cfg
 
 		private BatchingCollectionInitializerBuilder GetBatchingCollectionInitializationBuilder(BatchFetchStyle batchFetchStyle)
 		{
-			switch (batchFetchStyle)
-			{
-				case BatchFetchStyle.Legacy:
-					return new LegacyBatchingCollectionInitializerBuilder();
-				// case BatchFetchStyle.PADDED:
-				// 	break;
-				case BatchFetchStyle.Dynamic:
-					return new DynamicBatchingCollectionInitializerBuilder();
-				default:
-					throw new ArgumentOutOfRangeException(nameof(batchFetchStyle), batchFetchStyle, null);
-			}
+			return new DynamicBatchingCollectionInitializerBuilder();
 		}
 
 		private BatchingEntityLoaderBuilder GetBatchingEntityLoaderBuilder(BatchFetchStyle batchFetchStyle)
 		{
-			switch (batchFetchStyle)
-			{
-				case BatchFetchStyle.Legacy:
-					return new LegacyBatchingEntityLoaderBuilder();
-				// case BatchFetchStyle.PADDED:
-				// 	break;
-				case BatchFetchStyle.Dynamic:
-					return new DynamicBatchingEntityLoaderBuilder();
-				default:
-					throw new ArgumentOutOfRangeException(nameof(batchFetchStyle), batchFetchStyle, null);
-			}
+			return new DynamicBatchingEntityLoaderBuilder();
 		}
 
 		private static IBatcherFactory CreateBatcherFactory(IDictionary<string, string> properties, int batchSize, IConnectionProvider connectionProvider)
