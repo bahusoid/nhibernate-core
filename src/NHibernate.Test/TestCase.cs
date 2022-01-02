@@ -441,12 +441,12 @@ namespace NHibernate.Test
 
 		protected virtual bool AppliesTo(Dialect.Dialect dialect)
 		{
-			return true;
+			return false;
 		}
 
 		protected virtual bool AppliesTo(ISessionFactoryImplementor factory)
 		{
-			return true;
+			return false;
 		}
 
 		protected virtual void Configure(Configuration configuration)

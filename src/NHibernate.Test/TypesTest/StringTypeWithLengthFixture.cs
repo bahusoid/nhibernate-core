@@ -4,6 +4,7 @@ using NHibernate.Cfg.MappingSchema;
 using NHibernate.Criterion;
 using NHibernate.Dialect;
 using NHibernate.Driver;
+using NHibernate.Engine;
 using NHibernate.Exceptions;
 using NHibernate.Mapping.ByCode;
 using NUnit.Framework;
@@ -47,6 +48,16 @@ namespace NHibernate.Test.TypesTest
 			});
 
 			return mapper.CompileMappingForAllExplicitlyAddedEntities();
+		}
+
+		protected override bool AppliesTo(Dialect.Dialect dialect)
+		{
+			return true;
+		}
+
+		protected override bool AppliesTo(ISessionFactoryImplementor factory)
+		{
+			return true;
 		}
 
 		protected override void OnTearDown()
