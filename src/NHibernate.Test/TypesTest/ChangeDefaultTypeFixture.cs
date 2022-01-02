@@ -31,12 +31,12 @@ namespace NHibernate.Test.TypesTest
 			base.Configure(configuration);
 		}
 
-		protected override void Cleanup()
+		protected override void FixtureCleanup()
 		{
 			if (_originalDefaultDateTimeType != null)
 				TypeFactory.RegisterType(typeof(DateTime), _originalDefaultDateTimeType, TypeFactory.EmptyAliases);
 
-			base.Cleanup();
+			base.FixtureCleanup();
 		}
 
 		[Test]

@@ -92,7 +92,7 @@ namespace NHibernate.Test
 			}
 			catch (Exception e)
 			{
-				Cleanup();
+				FixtureCleanup();
 				log.Error("Error while setting up the test fixture", e);
 				throw;
 			}
@@ -126,7 +126,7 @@ namespace NHibernate.Test
 
 				if (AppliesTo(_sessionFactory))
 					DropSchema();
-				Cleanup();
+				FixtureCleanup();
 			}
 		}
 
@@ -342,7 +342,7 @@ namespace NHibernate.Test
 			return new DebugSessionFactory(cfg.BuildSessionFactory());
 		}
 
-		protected virtual void Cleanup()
+		protected virtual void FixtureCleanup()
 		{
 			Sfi?.Close();
 			_sessionFactory = null;

@@ -55,12 +55,12 @@ namespace NHibernate.Test.TypesTest
 			base.OnSetUp();
 		}
 
-		protected override void Cleanup()
+		protected override void FixtureCleanup()
 		{
 			TypeFactory.ClearCustomRegistrations();
 			Assert.That(TypeFactory.GetDefaultTypeFor(_replacedType), Is.Not.EqualTo(_testDefaultStringType));
 
-			base.Cleanup();
+			base.FixtureCleanup();
 		}
 
 		[Test]
