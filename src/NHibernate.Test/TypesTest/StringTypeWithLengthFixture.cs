@@ -243,12 +243,6 @@ namespace NHibernate.Test.TypesTest
 		[Test]
 		public void CriteriaEqualityParameterCanExceedColumnSize()
 		{
-			if (!TestDialect.SupportsNonDataBoundCondition)
-			{
-				// Doesn't work on Firebird due to Firebird not figuring out parameter types on its own.
-				Assert.Ignore("Dialect does not support this test");
-			}
-
 			// We should be able to query a column with a value longer than
 			// the specified column size, to avoid tedious exceptions.
 			using (ISession s = OpenSession())
@@ -269,12 +263,6 @@ namespace NHibernate.Test.TypesTest
 		[Test]
 		public void HqlEqualityParameterCanExceedColumnSize()
 		{
-			if (!TestDialect.SupportsNonDataBoundCondition)
-			{
-				// Doesn't work on Firebird due to Firebird not figuring out parameter types on its own.
-				Assert.Ignore("Dialect does not support this test");
-			}
-
 			// We should be able to query a column with a value longer than
 			// the specified column size, to avoid tedious exceptions.
 			using (ISession s = OpenSession())
