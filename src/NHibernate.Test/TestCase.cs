@@ -342,7 +342,7 @@ namespace NHibernate.Test
 			return new DebugSessionFactory(cfg.BuildSessionFactory());
 		}
 
-		private void Cleanup()
+		protected virtual void Cleanup()
 		{
 			Sfi?.Close();
 			_sessionFactory = null;

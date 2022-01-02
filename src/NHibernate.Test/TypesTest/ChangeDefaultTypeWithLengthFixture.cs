@@ -41,19 +41,26 @@ namespace NHibernate.Test.TypesTest
 			Assert.That(_originalDefaultStringType, Is.Not.Null);
 			_testDefaultStringType = new CustomStringType();
 
+			base.Configure(configuration);
+		}
+
+		protected override void OnSetUp()
+		{
 			TypeFactory.RegisterType(
 				_replacedType,
 				_testDefaultStringType,
 				new[] {"string"},
 				length => new CustomStringType(length));
-			base.Configure(configuration);
+
+			base.OnSetUp();
 		}
 
-		protected override void DropSchema()
+		protected override void Cleanup()
 		{
-			base.DropSchema();
 			TypeFactory.ClearCustomRegistrations();
 			Assert.That(TypeFactory.GetDefaultTypeFor(_replacedType), Is.Not.EqualTo(_testDefaultStringType));
+
+			base.Cleanup();
 		}
 
 		[Test]
