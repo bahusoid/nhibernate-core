@@ -68,7 +68,7 @@ jobs:
 
     - name: Build and Test
       run: |
-        export DB2_CLI_DRIVER_INSTALL_PATH="$(pwd)/src/NHibernate.Test/bin/Release/netcoreapp2.0/clidriver"
+        export DB2_CLI_DRIVER_INSTALL_PATH="$(pwd)/src/NHibernate.Test/bin/Release/net6.0/clidriver"
         export LD_LIBRARY_PATH=$LD_LIBRARY_PATH:$DB2_CLI_DRIVER_INSTALL_PATH/lib
         export LIBPATH=$LIBPATH:$DB2_CLI_DRIVER_INSTALL_PATH/lib
         export PATH=$DB2_CLI_DRIVER_INSTALL_PATH/bin:$DB2_CLI_DRIVER_INSTALL_PATH/adm:$PATH
