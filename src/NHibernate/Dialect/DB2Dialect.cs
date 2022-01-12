@@ -217,6 +217,8 @@ namespace NHibernate.Dialect
 			get { return true; }
 		}
 
+		public override string QuerySequencesString => "select * from syscat.sequences";
+
 		/// <summary></summary>
 		public override bool SupportsLimit
 		{
