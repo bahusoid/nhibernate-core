@@ -1,3 +1,4 @@
+Test commit
 Welcome to NHibernate
 =====================
 
