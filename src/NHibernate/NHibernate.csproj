@@ -3,6 +3,7 @@
 
   <PropertyGroup>
     <Description>An object persistence library for relational databases.</Description>
+    <TestCommit>1</TestCommit>
     <TargetFrameworks>$(NhLibTargetFrameworks)</TargetFrameworks>
     <NoWarn>$(NoWarn);3001;3002;3003;3005;1591;419</NoWarn>
     <SignAssembly>True</SignAssembly>
