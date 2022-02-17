@@ -284,22 +284,9 @@ namespace NHibernate.Engine
 		/// <summary> Cascade to the collection elements</summary>
 		private void CascadeCollectionElements(object parent, object child, CollectionType collectionType, CascadeStyle style, IType elemType, object anything, bool isCascadeDeleteEnabled)
 		{
-			bool reallyDoCascade = style.ReallyDoCascade(action)
-			                       && child != CollectionType.UnfetchedCollection;
-
-			if (reallyDoCascade)
-			{
-				log.Info("cascade {0} for collection: {1}", action, collectionType.Role);
-
-				foreach (object o in action.GetCascadableChildrenIterator(eventSource, collectionType, child))
-					CascadeProperty(parent, o, elemType, style, null, anything, isCascadeDeleteEnabled);
-
-				log.Info("done cascade {0} for collection: {1}", action, collectionType.Role);
-			}
-
 			var childAsPersColl = child as IPersistentCollection;
 			bool deleteOrphans = style.HasOrphanDelete && action.DeleteOrphans && elemType.IsEntityType
-			                     && childAsPersColl != null; //a newly instantiated collection can't have orphans
+								&& childAsPersColl != null; //a newly instantiated collection can't have orphans
 
 			if (deleteOrphans)
 			{
@@ -313,6 +300,19 @@ namespace NHibernate.Engine
 				DeleteOrphans(entityName, childAsPersColl);
 
 				log.Info("done deleting orphans for collection: {0}", collectionType.Role);
+			}
+
+			bool reallyDoCascade = style.ReallyDoCascade(action)
+			                       && child != CollectionType.UnfetchedCollection;
+
+			if (reallyDoCascade)
+			{
+				log.Info("cascade {0} for collection: {1}", action, collectionType.Role);
+
+				foreach (object o in action.GetCascadableChildrenIterator(eventSource, collectionType, child))
+					CascadeProperty(parent, o, elemType, style, null, anything, isCascadeDeleteEnabled);
+
+				log.Info("done cascade {0} for collection: {1}", action, collectionType.Role);
 			}
 		}
 
