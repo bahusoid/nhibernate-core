@@ -284,11 +284,12 @@ namespace NHibernate.Engine
 		/// <summary> Cascade to the collection elements</summary>
 		private void CascadeCollectionElements(object parent, object child, CollectionType collectionType, CascadeStyle style, IType elemType, object anything, bool isCascadeDeleteEnabled)
 		{
-			var childAsPersColl = child as IPersistentCollection;
-			bool deleteOrphans = style.HasOrphanDelete && action.DeleteOrphans && elemType.IsEntityType
-								&& childAsPersColl != null; //a newly instantiated collection can't have orphans
+			//Check the case described in
+			//https://stackoverflow.com/questions/3859036/why-doesnt-nhibernate-delete-orphans-first?noredirect=1&lq=1
+			//also check https://stackoverflow.com/questions/706673/forcing-nhibernate-to-cascade-delete-before-inserts
+			bool deleteOrphans = style.HasOrphanDelete && action.DeleteOrphans && elemType.IsEntityType; 
 
-			if (deleteOrphans)
+			if (deleteOrphans && child is IPersistentCollection  childAsPersColl)
 			{
 				// handle orphaned entities!!
 				log.Info("deleting orphans for collection: {0}", collectionType.Role);
