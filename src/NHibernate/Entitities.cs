@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-namespace NHibernate.Test.Futures
+namespace NHibernate.TestDeepsource.Futures
 {
 
 
