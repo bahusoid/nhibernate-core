@@ -353,10 +353,11 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				IEntityPersister entityPersister = elem.EntityPersister;
 				if ( entityPersister != null ) 
 				{
-					Walker.AddQuerySpaces( entityPersister.QuerySpaces );
+					Walker.AddQuerySpaces(entityPersister);
 				}
 			}
-			Walker.AddQuerySpaces( queryableCollection.CollectionSpaces );	// Always add the collection's query spaces.
+			// Always add the collection's query spaces.
+			Walker.AddQuerySpaces(queryableCollection);
 		}
 
 		private void DereferenceEntity(EntityType entityType, bool implicitJoin, string classAlias, bool generateJoin, IASTNode parent) 
@@ -515,10 +516,8 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 			if ( ! useFoundFromElement )
 			{
-				// If this is an implied join in a from element, then use the impled join type which is part of the
-				// tree parser's state (set by the gramamar actions).
 				JoinSequence joinSequence = SessionFactoryHelper
-					.CreateJoinSequence(!forceLeftJoin && impliedJoin, propertyType, tableAlias, _joinType, joinColumns);
+					.CreateJoinSequence(false, propertyType, tableAlias, _joinType, joinColumns);
 
 				var factory = new FromElementFactory(
 						currentFromClause,
@@ -547,7 +546,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			}
 
 			SetImpliedJoin( elem );
-			Walker.AddQuerySpaces( elem.EntityPersister.QuerySpaces );
+			Walker.AddQuerySpaces(elem.EntityPersister);
 			FromElement = elem;	// This 'dot' expression now refers to the resulting from element.
 		}
 
