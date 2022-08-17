@@ -212,7 +212,10 @@ namespace NHibernate.Hql.Ast.ANTLR
 			}
 			if (right.Type == ENTITY_JOIN)
 			{
-				Out(" ");
+				if (right.JoinSequence.IsThetaStyle)
+					Out(", ");
+				else
+					Out(" ");
 			}
 			else if (right.RealOrigin == left || (right.RealOrigin != null && right.RealOrigin == left.RealOrigin))
 			{

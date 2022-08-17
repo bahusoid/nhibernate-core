@@ -172,6 +172,11 @@ namespace NHibernate.Hql.Ast.ANTLR.Util
 				ProcessDynamicFilterParameters(fromFragment,fromElement,_walker);
 			}
 
+			if (joinFragment.HasThetaJoins)
+			{
+				join.SetUseThetaStyle(true);
+			}
+
 			_syntheticAndFactory.AddWhereFragment( 
 					joinFragment,
 					whereFrag,

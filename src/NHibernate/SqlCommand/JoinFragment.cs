@@ -41,6 +41,8 @@ namespace NHibernate.SqlCommand
 		public virtual void AddFragment(JoinFragment ojf)
 		{
 			AddJoins(ojf.ToFromFragmentString, ojf.ToWhereFragmentString);
+			if (ojf.HasThetaJoins)
+				HasThetaJoins = ojf.HasThetaJoins;
 		}
 
 		protected bool AddCondition(SqlStringBuilder buffer, string on)

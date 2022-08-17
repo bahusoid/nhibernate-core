@@ -42,7 +42,8 @@ namespace NHibernate.SqlCommand
 			AddJoin(tableName, alias, fkColumns, pkColumns, joinType);
 			if (joinType == JoinType.InnerJoin)
 			{
-				AddCondition(on);
+				if (AddCondition(on))
+					HasThetaJoins = true;
 			}
 			else if (joinType == JoinType.LeftOuterJoin)
 			{
@@ -76,7 +77,8 @@ namespace NHibernate.SqlCommand
 					i += 3;
 				}
 			}
-			AddCondition(SqlString.Parse(buf.ToString()));
+			if (AddCondition(SqlString.Parse(buf.ToString())))
+				HasThetaJoins = true;
 		}
 
 		private static readonly HashSet<char> Operators = new HashSet<char>();

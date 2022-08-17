@@ -63,13 +63,42 @@ namespace NHibernate.Test.NHSpecificTest.GH3113
 		}
 
 		[Test]
-		public void JoinFailsOnOracle9Dialect()
+		public void JoinLinq()
 		{
 			using (var session = OpenSession())
 			{
 				var result = from e in session.Query<Entity>()
 							 join e2 in session.Query<Entity>() on e.Id equals e2.Id
 							 where e.Name == "Bob"
+							 select e.Name;
+
+				Assert.That(result.ToList(), Has.Count.EqualTo(1));
+			}
+		}
+
+		[Test]
+		public void LeftJoinLinq()
+		{
+			using (var session = OpenSession())
+			{
+				var result = from e in session.Query<Entity>()
+							 join e2 in session.Query<Entity>() on e.Id equals e2.Id into x
+							 from e2 in x.DefaultIfEmpty()
+							 where e.Name == "Bob"
+							 select e.Name;
+
+				Assert.That(result.ToList(), Has.Count.EqualTo(1));
+			}
+		}
+
+		[Test]
+		public void CrossJoinLinq()
+		{
+			using (var session = OpenSession())
+			{
+				var result = from e in session.Query<Entity>()
+							 from e2 in session.Query<Entity>()
+							 where e.Id == e2.Id && e.Name == "Bob"
 							 select e.Name;
 
 				Assert.That(result.ToList(), Has.Count.EqualTo(1));
