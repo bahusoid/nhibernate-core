@@ -205,7 +205,6 @@ namespace NHibernate.Impl
 
 		public ISQLQuery AddScalar(string columnAlias, IType type)
 		{
-			autoDiscoverTypes = true;
 			queryReturns.Add(new NativeSQLQueryScalarReturn(columnAlias, type));
 			return this;
 		}
