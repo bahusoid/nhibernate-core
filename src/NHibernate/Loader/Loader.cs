@@ -1829,8 +1829,7 @@ namespace NHibernate.Loader
 
 		internal bool IsCacheable(QueryParameters queryParameters)
 		{
-			return _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable
-				&& !(queryParameters.HasAutoDiscoverScalarTypes && queryParameters.ResultTransformer != null);
+			return _factory.Settings.IsQueryCacheEnabled && queryParameters.Cacheable;
 		}
 
 		private IList ListIgnoreQueryCache(ISessionImplementor session, QueryParameters queryParameters)
