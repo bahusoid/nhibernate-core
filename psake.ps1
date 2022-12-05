@@ -106,9 +106,8 @@ Task Set-Configuration {
 
 Task Build {
     Exec { 
-        dotnet `
-            build ./src/NHibernate.sln `
-            -c Release
+        dotnet build ./src/NHibernate/NHibernate.csproj -m:1 -c Release
+        dotnet build ./src/NHibernate.sln -c Release
     }
 }
 
