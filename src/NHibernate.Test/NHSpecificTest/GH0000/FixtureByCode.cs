@@ -53,7 +53,7 @@ namespace NHibernate.Test.NHSpecificTest.GH0000
 			using (var transaction = session.BeginTransaction())
 			{
 				var result = from e in session.Query<Entity>()
-							 where e.Name == "Bob"
+							 where e.Name == "Bob1"
 							 select e;
 
 				Assert.That(result.ToList(), Has.Count.EqualTo(1));
