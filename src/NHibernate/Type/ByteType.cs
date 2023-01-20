@@ -2,7 +2,6 @@ using System;
 using System.Collections;
 using System.Data;
 using System.Data.Common;
-using System.Numerics;
 using NHibernate.Engine;
 using NHibernate.SqlTypes;
 
@@ -24,21 +23,12 @@ namespace NHibernate.Type
 
 		public override object Get(DbDataReader rs, int index, ISessionImplementor session)
 		{
-			return rs[index] switch
-			{
-
-				BigInteger bi => (byte) bi,
-				var c => Convert.ToByte(c)
-			};
+			return GetNumeric(rs, index, o => Convert.ToByte(o), i => (byte) i);
 		}
 
 		public override object Get(DbDataReader rs, string name, ISessionImplementor session)
 		{
-			return rs[name] switch
-			{
-				BigInteger bi => (byte) bi,
-				var c => Convert.ToByte(c)
-			};
+			return Get(rs, rs.GetOrdinal(name), session);
 		}
 
 		public override System.Type ReturnedClass

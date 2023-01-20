@@ -5,7 +5,6 @@ using NHibernate.Engine;
 using NHibernate.SqlTypes;
 using System.Collections.Generic;
 using System.Data;
-using System.Numerics;
 
 namespace NHibernate.Type
 {
@@ -31,34 +30,12 @@ namespace NHibernate.Type
 
 		public override object Get(DbDataReader rs, int index, ISessionImplementor session)
 		{
-			try
-			{
-				return rs[index] switch
-				{
-					BigInteger bi => (int) bi,
-					var c => Convert.ToInt32(c)
-				};
-			}
-			catch (Exception ex)
-			{
-				throw new FormatException(string.Format("Input string '{0}' was not in the correct format.", rs[index]), ex);
-			}
+			return GetNumeric(rs, index, o => Convert.ToInt32(o), i => (int) i);
 		}
 
 		public override object Get(DbDataReader rs, string name, ISessionImplementor session)
 		{
-			try
-			{
-				return rs[name] switch
-				{
-					BigInteger bi => (int) bi,
-					var c => Convert.ToInt32(c)
-				};
-			}
-			catch (Exception ex)
-			{
-				throw new FormatException(string.Format("Input string '{0}' was not in the correct format.", rs[name]), ex);
-			}
+			return Get(rs, rs.GetOrdinal(name), session);
 		}
 
 		public override System.Type ReturnedClass

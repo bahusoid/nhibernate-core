@@ -1,4 +1,6 @@
 using System;
+using System.Data.Common;
+using System.Numerics;
 using NHibernate.Engine;
 using NHibernate.SqlTypes;
 
@@ -61,5 +63,23 @@ namespace NHibernate.Type
 		{
 			return val.ToString();
 		}
+
+		protected static object GetNumeric<T>(DbDataReader rs, int index, Func<object, T> convert, Func< BigInteger, T> convertFromBigInt) where T:struct 
+		{
+			try
+			{
+				var type = rs.GetFieldType(index);
+				if (type == typeof(T))
+					return rs[index];
+				if (type == typeof(BigInteger))
+					return convertFromBigInt((BigInteger)rs[index]);
+				return convert(rs[index]);
+			}
+			catch (Exception ex)
+			{
+				throw new FormatException(string.Format("Input string '{0}' was not in the correct format.", rs[index]), ex);
+			}
+		}
+
 	}
 }

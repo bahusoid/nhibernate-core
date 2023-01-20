@@ -1,7 +1,6 @@
 using System;
 using System.Data;
 using System.Data.Common;
-using System.Numerics;
 using NHibernate.Engine;
 using NHibernate.SqlTypes;
 
@@ -23,20 +22,12 @@ namespace NHibernate.Type
 
 		public override object Get(DbDataReader rs, int index, ISessionImplementor session)
 		{
-			return rs[index] switch
-			{
-				BigInteger bi => (double) bi,
-				var v => Convert.ToDouble(v)
-			};
+			return GetNumeric(rs, index, o => Convert.ToDouble(o), i => (double) i);
 		}
 
 		public override object Get(DbDataReader rs, string name, ISessionImplementor session)
 		{
-			return rs[name] switch
-			{
-				BigInteger bi => (double) bi,
-				var v => Convert.ToDouble(v)
-			};
+			return Get(rs, rs.GetOrdinal(name), session);
 		}
 
 		/// <summary></summary>

@@ -29,34 +29,12 @@ namespace NHibernate.Type
 		private static readonly UInt32 ZERO = 0;
 		public override object Get(DbDataReader rs, int index, ISessionImplementor session)
 		{
-			try
-			{
-				return rs[index] switch
-				{
-					BigInteger bi => (ulong)bi,
-					var c => Convert.ToUInt64(c)
-				};
-			}
-			catch (Exception ex)
-			{
-				throw new FormatException(string.Format("Input string '{0}' was not in the correct format.", rs[index]), ex);
-			}
+			return GetNumeric(rs, index, o => Convert.ToUInt64(o), i => (ulong) i);
 		}
 
 		public override object Get(DbDataReader rs, string name, ISessionImplementor session)
 		{
-			try
-			{
-				return rs[name] switch
-				{
-					BigInteger bi => (ulong) bi,
-					var c => Convert.ToUInt64(c)
-				};
-			}
-			catch (Exception ex)
-			{
-				throw new FormatException(string.Format("Input string '{0}' was not in the correct format.", rs[name]), ex);
-			}
+			return Get(rs, rs.GetOrdinal(name), session);
 		}
 
 		public override System.Type ReturnedClass
