@@ -31,7 +31,10 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 				foreach (var node in GetResultNodes())
 				{
-					if (node is ISelectExpression select && !(node is ParameterNode))
+					if (node is IExpectedTypeAwareNode expectedType && expectedType.ExpectedType != null)
+						return expectedType.ExpectedType;
+
+					if (node is ISelectExpression select && select.DataType != null)
 						return select.DataType;
 				}
 
