@@ -228,7 +228,9 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				if (!IsTransaperentCast())
 					return;
 
-				if (GetChild(0).NextSibling.GetChild(0) is IExpectedTypeAwareNode typeNode)
+				var node = GetChild(0).NextSibling.GetChild(0);
+				//transparentcast on parameters is a special use case - skip it.
+				if (node.Type != HqlSqlWalker.NAMED_PARAM && node is IExpectedTypeAwareNode  typeNode && typeNode.ExpectedType == null)
 					typeNode.ExpectedType = value;
 			}
 		}
