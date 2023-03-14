@@ -56,6 +56,7 @@ namespace NHibernate.Dialect
 			RegisterColumnType(DbType.String, 2147483647, "CLOB");
 			RegisterColumnType(DbType.Time, "TIME");
 			RegisterColumnType(DbType.Guid, "CHAR(16) FOR BIT DATA");
+			RegisterFunction("transparentcast", new CastFunction());
 
 			RegisterFunction("abs", new StandardSQLFunction("abs"));
 			RegisterFunction("absval", new StandardSQLFunction("absval"));
