@@ -15,7 +15,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 	/// Ported by: Steve Strong
 	/// </summary>
 	[CLSCompliant(false)]
-	public class MethodNode : AbstractSelectExpression 
+	public class MethodNode : AbstractSelectExpression, IExpectedTypeAwareNode
 	{
 		private static readonly INHibernateLogger Log = NHibernateLogger.For(typeof(MethodNode));
 
@@ -24,6 +24,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 		private bool _inSelect;
 		private FromElement _fromElement;
 		private ISQLFunction _function;
+		private IType _expectedType;
 
 		public MethodNode(IToken token) : base(token)
 		{
@@ -211,6 +212,25 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			/*else {
 				methodName = (String) getWalker().getTokenReplacements().get( methodName );
 			}*/
+		}
+
+		private bool IsTransaperentCast()
+		{
+			return _methodName == "transparentcast";
+		}
+
+		public IType ExpectedType
+		{
+			get => _expectedType;
+			set
+			{
+				_expectedType = value;
+				if (!IsTransaperentCast())
+					return;
+
+				if (GetChild(0).NextSibling.GetChild(0) is IExpectedTypeAwareNode typeNode)
+					typeNode.ExpectedType = value;
+			}
 		}
 	}
 }

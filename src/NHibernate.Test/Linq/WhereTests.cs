@@ -56,6 +56,34 @@ namespace NHibernate.Test.Linq
 		}
 
 		[Test]
+		public void CanUseStringEnumInConditional()
+		{
+			using var log = new SqlLogSpy();
+			var query = db.Users
+			              .Where(
+				              user => (user.Enum1 == EnumStoredAsString.Small
+					              ? EnumStoredAsString.Small
+					              : EnumStoredAsString.Large) == user.Enum1)
+			              .Select(x => x.Enum1);
+
+			Assert.That(query.Count(), Is.GreaterThan(0));
+		}
+
+		[Test]
+		public void CanUseStringEnumInConditional2()
+		{
+			using var log = new SqlLogSpy();
+			var query = db.Users
+			              .Where(
+				              user => (user.Enum1 == EnumStoredAsString.Small
+					              ? user.Enum1
+					              : EnumStoredAsString.Large) == user.Enum1)
+			              .Select(x => x.Enum1);
+
+			Assert.That(query.Count(), Is.GreaterThan(0));
+		}
+
+		[Test]
 		public void FirstElementWithWhere()
 		{
 			var query = (from user in db.Users

@@ -53,14 +53,21 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			}
 
 			ProcessMetaTypeDiscriminatorIfNecessary(lhs, rhs);
-			IType lhsType = ExtractDataType( lhs );
-			IType rhsType = ExtractDataType( rhs );
+			IType lhsType = ExtractDataType( lhs, out var isLhsGuessedType );
+			IType rhsType = ExtractDataType( rhs, out var isRhsGuessedType );
 
-			if ( lhsType == null ) 
+			if ( lhsType == null) 
+			{
+				lhsType = rhsType;
+			} else if (isLhsGuessedType && rhsType != null)
 			{
 				lhsType = rhsType;
 			}
-			if ( rhsType == null ) 
+
+			if ( rhsType == null)
+			{
+				rhsType = lhsType;
+			} else if (isRhsGuessedType && lhsType != null)
 			{
 				rhsType = lhsType;
 			}
@@ -246,6 +253,12 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				return rtn;
 			}
 			throw new HibernateException( "dont know how to extract row value elements from node : " + operand );
+		}
+
+		private static IType ExtractDataType(IASTNode operand, out bool isGuessedType) 
+		{
+			isGuessedType = operand.Type == HqlSqlWalker.METHOD_CALL && operand.Text == "transparentcast";
+			return ExtractDataType(operand);
 		}
 
 		protected static IType ExtractDataType(IASTNode operand) 
