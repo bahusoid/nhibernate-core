@@ -66,13 +66,7 @@ namespace NHibernate.Dialect.Function
 
 			if (hqlType != null)
 			{
-				SqlType[] sqlTypeCodes = hqlType.SqlTypes(factory);
-				if (sqlTypeCodes.Length != 1)
-				{
-					throw new QueryException("invalid NHibernate type for cast(), was:" + typeName);
-				}
-
-				sqlType = factory.Dialect.GetCastTypeName(sqlTypeCodes[0]);
+				sqlType = GetSqlType(factory, hqlType, typeName);
 				//{
 				//  //trim off the length/precision/scale
 				//  int loc = sqlType.IndexOf('(');
@@ -96,6 +90,19 @@ namespace NHibernate.Dialect.Function
 			return Render(args[0], sqlType, factory);
 		}
 
+		static string GetSqlType(ISessionFactoryImplementor factory, IType hqlType, string typeName)
+		{
+			string sqlType;
+			SqlType[] sqlTypeCodes = hqlType.SqlTypes(factory);
+			if (sqlTypeCodes.Length != 1)
+			{
+				throw new QueryException("invalid NHibernate type for cast(), was:" + typeName);
+			}
+
+			sqlType = factory.Dialect.GetCastTypeName(sqlTypeCodes[0]);
+			return sqlType;
+		}
+
 		#endregion
 
 		// Since v5.3
@@ -115,6 +122,11 @@ namespace NHibernate.Dialect.Function
 		protected virtual SqlString Render(object expression, string sqlType, ISessionFactoryImplementor factory)
 		{
 			return new SqlString("cast(", expression, " as ", sqlType, ")");
+		}
+
+		internal SqlString Render(IList args, IType expectedType, ISessionFactoryImplementor factory)
+		{
+			 return Render(args[0], GetSqlType(factory, expectedType, expectedType.Name), factory);
 		}
 
 		#region IFunctionGrammar Members

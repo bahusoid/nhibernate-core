@@ -214,7 +214,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			}*/
 		}
 
-		private bool IsTransaperentCast()
+		public bool IsTransaperentCast()
 		{
 			return _methodName == "transparentcast";
 		}
