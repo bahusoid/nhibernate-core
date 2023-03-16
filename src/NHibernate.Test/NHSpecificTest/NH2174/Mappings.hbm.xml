@@ -48,7 +48,7 @@
         <column name="id_Doc_detail" />
         <column name="id_base_detail" />
       </key>
-      <many-to-many class="DocumentDetailDocument" >
+      <many-to-many class="DocumentDetailDocument" not-found="ignore" >
         <column name="id_item" />
         <column name="Version" />
         <column name="id_Doc" />

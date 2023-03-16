@@ -37,7 +37,7 @@ namespace NHibernate.Test.NHSpecificTest.NH2174
 		{
 			using (var session = OpenSession())
 			{
-				var result = (from e in session.Query<Document>().Fetch(x => x.RefferedDetails)
+				var result = (from e in session.Query<Document>().FetchMany(x => x.RefferedDetails)
 							select e).FirstOrDefault();
 
 				Assert.That(result.RefferedDetails, Has.Count.EqualTo(1));
@@ -47,8 +47,9 @@ namespace NHibernate.Test.NHSpecificTest.NH2174
 		[Test(Description = "GH-3239")]
 		public void LinqFetchManyToMany()
 		{
+			using var log = new SqlLogSpy();
 			using var session = OpenSession();
-			var result = session.Query<Document>().Fetch(x => x.RefferedDetailsManyToMany).First();
+			var result = session.Query<Document>().FetchMany(x => x.RefferedDetailsManyToMany).First();
 			Assert.That(result.RefferedDetailsManyToMany, Has.Count.EqualTo(1));
 		}
 
