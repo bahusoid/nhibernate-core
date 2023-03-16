@@ -328,9 +328,9 @@ namespace NHibernate.Hql.Ast
 		/// <param name="expression">The expression to cast.</param>
 		/// <param name="type">The resulting type.</param>
 		/// <returns>A <see cref="HqlTransparentCast"/> node.</returns>
-		public HqlTransparentCast TransparentCast(HqlExpression expression, System.Type type)
+		public HqlExpression TransparentCast(HqlExpression expression, System.Type type)
 		{
-			return new HqlTransparentCast(_factory, expression, type);
+			return expression;
 		}
 
 		public HqlBitwiseNot BitwiseNot()
