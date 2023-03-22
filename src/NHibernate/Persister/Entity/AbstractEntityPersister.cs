@@ -41,7 +41,7 @@ namespace NHibernate.Persister.Entity
 	public abstract partial class AbstractEntityPersister : IOuterJoinLoadable, IQueryable, IClassMetadata,
 		IUniqueKeyLoadable, ISqlLoadable, ILazyPropertyInitializer, IPostInsertIdentityPersister, ILockable,
 		ISupportSelectModeJoinable, ICompositeKeyPostInsertIdentityPersister, ISupportLazyPropsJoinable,
-		IPersister
+		IPersister, IFilterHelper
 	{
 		#region InclusionChecker
 
@@ -3736,79 +3736,8 @@ namespace NHibernate.Persister.Entity
 		public virtual string FilterFragment(FilterHelper filterHelper, string alias, IDictionary<string, IFilter> enabledFilters, string filterFragment)
 		{
 			var sessionFilterFragment = new StringBuilder();
-			filterHelper.Render(sessionFilterFragment, GenerateFilterConditionAlias(alias), GetColumnsToTableAliasMap(alias), enabledFilters);
+			filterHelper.Render(sessionFilterFragment, alias, this, enabledFilters);
 			return sessionFilterFragment.Append(filterFragment).ToString();
-		}
-
-		private IDictionary<string, string> GetColumnsToTableAliasMap(string rootAlias)
-		{
-			if (SubclassTableSpan < 2)
-				return CollectionHelper.EmptyDictionary<string, string>();
-
-			var propDictionary = new Dictionary<PropertyKey, string>();
-			for (int i =0; i < SubclassPropertyNameClosure.Length; i++)
-			{
-				string property = SubclassPropertyNameClosure[i];
-                string[] cols = GetSubclassPropertyColumnNames(property);
-
-				if (cols != null && cols.Length > 0)
-				{
-					PropertyKey key = new PropertyKey(cols[0], GetSubclassPropertyTableNumber(i));
-					propDictionary[key] = property;
-				}
-			}
-
-			var dict = new Dictionary<string, string>();
-			for (int i = 0; i < SubclassColumnTableNumberClosure.Length; i++ )
-			{
-				string col = SubclassColumnClosure[i];
-				var fullColumn = GetSubclassAliasedColumn(rootAlias, SubclassColumnTableNumberClosure[i], col);
-
-				PropertyKey key = new PropertyKey(col, SubclassColumnTableNumberClosure[i]);
-				if (propDictionary.ContainsKey(key))
-				{
-					dict[propDictionary[key]] = fullColumn;
-				}
-
-				if (!dict.ContainsKey(col))
-				{
-					dict[col] = fullColumn;	
-				}
-			}
-
-			//Reversed loop to prefer root columns in case same key names for subclasses
-			for (int i = SubclassTableSpan - 1; i >= 0; i--)
-			{
-				foreach (var key in GetSubclassTableKeyColumns(i))
-				{
-					dict[key] = GetSubclassAliasedColumn(rootAlias, i, key);
-				}
-			}
-
-			return dict;
-		}
-
-		private class PropertyKey
-		{
-			public string Column { get; set; }
-			public int TableNumber { get; set; }
-
-			public PropertyKey(string column, int tableNumber)
-			{
-				Column = column;
-				TableNumber = tableNumber;
-			}
-
-			public override int GetHashCode()
-			{
-				return Column.GetHashCode() ^ TableNumber.GetHashCode();
-			}
-
-			public override bool Equals(object other)
-			{
-				PropertyKey otherTuple = other as PropertyKey;
-				return otherTuple == null ? false : Column.Equals(otherTuple.Column) && TableNumber.Equals(otherTuple.TableNumber);
-			}
 		}
 
 		public virtual string GenerateFilterConditionAlias(string rootAlias)
