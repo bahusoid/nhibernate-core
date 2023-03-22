@@ -12,6 +12,11 @@ using NHibernate.Type;
 
 namespace NHibernate.Util
 {
+	public interface IFilterHelper
+	{
+		string GenerateTableAliasForColumn(string rootAlias, string column);
+	}
+
 	/// <summary></summary>
 	public sealed class FilterHelper
 	{
@@ -58,7 +63,31 @@ namespace NHibernate.Util
 			Render(buffer, alias, CollectionHelper.EmptyDictionary<string, string>(), enabledFilters);
 		}
 
-		public void Render(StringBuilder buffer, string defaultAlias, IDictionary<string, string> propMap, IDictionary<string, IFilter> enabledFilters)
+		private class PropertyHelper : IFilterHelper
+		{
+			private readonly IDictionary<string, string> _propMap;
+
+			public PropertyHelper(IDictionary<string,string> propMap)
+			{
+				_propMap = propMap;
+			}
+
+			public string GenerateTableAliasForColumn(string rootAlias, string column)
+			{
+				return
+					_propMap.TryGetValue(column, out var fullColumn)
+						? fullColumn.Substring(0, fullColumn.Length - (column.Length + 1))
+						: rootAlias;
+			}
+		}
+
+		public void Render(StringBuilder buffer, string defaultAlias, IDictionary<string, string> propMap,
+			IDictionary<string, IFilter> enabledFilters)
+		{
+			Render(buffer, defaultAlias, new PropertyHelper(propMap), enabledFilters);
+		}
+
+		public void Render(StringBuilder buffer, string defaultAlias, IFilterHelper propMap, IDictionary<string, IFilter> enabledFilters)
 		{
 			for (int i = 0; i < filterNames.Length; i++)
 			{
@@ -74,7 +103,7 @@ namespace NHibernate.Util
 			}
 		}
 
-		private static void AddFilterString(StringBuilder buffer, string defaultAlias, IDictionary<string, string> propMap, string condition)
+		private static void AddFilterString(StringBuilder buffer, string defaultAlias, IFilterHelper propMap, string condition)
 		{
 			int i;
 			int upTo = 0;
@@ -87,10 +116,9 @@ namespace NHibernate.Util
 				upTo = upTo >= 0 ? upTo : condition.Length;
 				string property = condition.Substring(startOfProperty, upTo - startOfProperty);
 
-				if (!propMap.TryGetValue(property, out var fullColumn))
-					fullColumn = string.IsNullOrEmpty(defaultAlias)
-						? property
-						: defaultAlias + "." + property;
+				var fullColumn = string.IsNullOrEmpty(defaultAlias)
+					? property
+					: propMap.GenerateTableAliasForColumn(defaultAlias, property) + "." + property;
 
 				buffer.Append(fullColumn);
 			}
