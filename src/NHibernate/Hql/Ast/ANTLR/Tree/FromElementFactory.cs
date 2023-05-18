@@ -311,20 +311,20 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				elem.UseFromFragment = true;
 				elem.SetImpliedInFromClause(true);
 			}
-			if (elem.Walker.IsSubQuery)
-			{
-				// two conditions where we need to transform this to a theta-join syntax:
-				//      1) 'elem' is the "root from-element" in correlated subqueries
-				//      2) The DotNode.useThetaStyleImplicitJoins has been set to true
-				//          and 'elem' represents an implicit join
-				if (elem.FromClause != elem.Origin.FromClause || DotNode.UseThetaStyleImplicitJoins)
-				{
-					// the "root from-element" in correlated subqueries do need this piece
-					elem.Type = HqlSqlWalker.FROM_FRAGMENT;
-					joinSequence.SetUseThetaStyle(true);
-					elem.UseFromFragment = false;
-				}
-			}
+			// if (elem.Walker.IsSubQuery)
+			// {
+			// 	// two conditions where we need to transform this to a theta-join syntax:
+			// 	//      1) 'elem' is the "root from-element" in correlated subqueries
+			// 	//      2) The DotNode.useThetaStyleImplicitJoins has been set to true
+			// 	//          and 'elem' represents an implicit join
+			// 	if (elem.FromClause != elem.Origin.FromClause || DotNode.UseThetaStyleImplicitJoins)
+			// 	{
+			// 		// the "root from-element" in correlated subqueries do need this piece
+			// 		elem.Type = HqlSqlWalker.FROM_FRAGMENT;
+			// 		joinSequence.SetUseThetaStyle(true);
+			// 		elem.UseFromFragment = false;
+			// 	}
+			// }
 
 			return elem;
 		}
