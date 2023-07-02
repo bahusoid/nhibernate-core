@@ -109,14 +109,17 @@ namespace NHibernate.Intercept
 					return value;
 				}
 
-				if (value.IsProxy())
+				if (value is INHibernateProxy proxy)
 				{
-					loadedUnwrapProxyFieldNames.Remove(fieldName);
+					if (proxy.HibernateLazyInitializer.IsUninitialized)
+					{
+						loadedUnwrapProxyFieldNames.Remove(fieldName);
+						return value;
+					}
+					value = proxy.HibernateLazyInitializer.GetImplementation();
 				}
-				else
-				{
-					loadedUnwrapProxyFieldNames.Add(fieldName);
-				}
+
+				loadedUnwrapProxyFieldNames.Add(fieldName);
 				return value;
 			}
 
