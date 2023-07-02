@@ -249,6 +249,24 @@ namespace NHibernate.Test.GhostProperty
 		}
 
 		[Test]
+		public void UninitedPropertySetForInitedProperty()
+		{
+			Order order;
+			CreditCard card;
+			using (var s = OpenSession())
+			{
+				order = s.Get<Order>(1);
+				var inited = order.Payment;
+				card = s.Load<CreditCard>(2);
+			}
+
+			order.Payment = card;
+
+			Assert.That(NHibernateUtil.IsInitialized(card), Is.False);
+			Assert.That(NHibernateUtil.IsPropertyInitialized(order, nameof(order.Payment)), Is.False);
+		}
+
+		[Test]
 		public void WillFetchJoinInSingleHqlQuery()
 		{
 			Order order = null;
