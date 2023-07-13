@@ -297,9 +297,9 @@ namespace NHibernate.Engine
 				log.Info("done cascade {0} for collection: {1}", action, collectionType.Role);
 			}
 
-			var childAsPersColl = child as IPersistentCollection;
+			IPersistentCollection childAsPersColl = null;
 			bool deleteOrphans = style.HasOrphanDelete && action.DeleteOrphans && elemType.IsEntityType
-			                     && childAsPersColl != null; //a newly instantiated collection can't have orphans
+			                     && (childAsPersColl = (IPersistentCollection) child).IsDirty;
 
 			if (deleteOrphans)
 			{
