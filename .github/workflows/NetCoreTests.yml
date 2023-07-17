@@ -7,9 +7,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        DB: [SqlServer2008]
         include:
-          - DB: SqlServer2008
+          - DB: [SqlServer2008, GGG]
             DB_BASE: SqlServer
             CONNECTION_STRING: "Server=localhost;initial catalog=nhibernate;User Id=sa;Password=P@ssw0rd;packet size=4096;"
             DB_INIT: |
