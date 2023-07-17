@@ -8,20 +8,13 @@ jobs:
       matrix:
         a: [one, two]
         b:
-        - ['1', '2']
-        - ['3', '4']
-        include:
-         c:
          - one
          - two
-        exclude:
-        - a: two
-          b: ['3', '4']
     runs-on: ubuntu-latest
     continue-on-error: ${{matrix.ALLOW_FAILURE == true}}
     env:
       LANG: en-US.UTF-8 #default POSIX locale doesn't support ignore case comparisons
-    name: ${{matrix.config.DB}}
+    name: ${{matrix.b}}
 
     steps:
     - name: Set up ${{matrix.config.DB}}
