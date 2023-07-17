@@ -5,12 +5,14 @@ on: [push, pull_request]
 jobs:
   db:
     strategy:
-      fail-fast: false
       matrix:
-        config: |
-          [
-          {DB: SqlServer2008, }
-          ]
+        a: [one, two]
+        b:
+        - ['1', '2']
+        - ['3', '4']
+        exclude:
+        - a: two
+          b: ['3', '4']
     runs-on: ubuntu-latest
     continue-on-error: ${{matrix.ALLOW_FAILURE == true}}
     env:
