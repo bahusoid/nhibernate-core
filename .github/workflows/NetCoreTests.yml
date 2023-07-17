@@ -7,7 +7,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        DB_BASE: [SqlServer, Firebird]
+        DB: [SqlServer2008]
         include:
           - DB: SqlServer2008
             DB_BASE: SqlServer
