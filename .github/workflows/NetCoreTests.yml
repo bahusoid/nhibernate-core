@@ -10,6 +10,10 @@ jobs:
         b:
         - ['1', '2']
         - ['3', '4']
+        include:
+         c:
+         - one
+         - two
         exclude:
         - a: two
           b: ['3', '4']
