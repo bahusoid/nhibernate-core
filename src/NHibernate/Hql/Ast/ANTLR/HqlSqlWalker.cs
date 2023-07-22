@@ -458,6 +458,14 @@ namespace NHibernate.Hql.Ast.ANTLR
 			return intoClause;
 		}
 
+		IASTNode RegisterCast(IASTNode path, IASTNode type)
+		{
+			var fromReferenceNode = (FromReferenceNode)path;
+			fromReferenceNode.CastEntityType = ResolveEntityJoinReferencedPersister((FromReferenceNode) type);
+			fromReferenceNode.ResolveFirstChild();
+			return path;
+		}
+
 		IASTNode Resolve(IASTNode node)
 		{
 			if (node != null)

@@ -267,15 +267,10 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 		{
 			if (DataType == null)
 			{
-				FromElement fromElement = GetLhs().FromElement;
-
-				if (fromElement == null)
-				{
-					return null;
-				}
+				var lhs = GetLhs();
 
 				// If the lhs is a collection, use CollectionPropertyMapping
-				IType propertyType = fromElement.GetPropertyType(_propertyName, _propertyPath);
+				IType propertyType = lhs.GetPropertyType(_propertyName, _propertyPath);
 				if (Log.IsDebugEnabled())
 				{
 					Log.Debug("getDataType() : {0} -> {1}", _propertyPath, propertyType);
@@ -708,11 +703,12 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 		private string[] GetColumns()
 		{
-			if ( _columns == null ) 
+			if (_columns == null)
 			{
 				// Use the table fromElement and the property name to get the array of column names.
-				string tableAlias = GetLhs().FromElement.TableAlias;
-				_columns = FromElement.ToColumns( tableAlias, _propertyPath, false );
+				var lhs = GetLhs();
+				string tableAlias = lhs.FromElement.TableAlias;
+				_columns = lhs.ToColumns(tableAlias, _propertyPath);
 			}
 			return _columns;
 		}

@@ -355,6 +355,11 @@ withClause
 	;
 	finally {HandleClauseEnd( WITH );}
 
+castExpr
+	: ^(CAST_EXPR p1=path p2=path )
+		-> ^({ RegisterCast($p1.tree, $p2.tree) }) 
+	;
+
 whereClause
 	: ^(w=WHERE { HandleClauseStart( WHERE ); } b=logicalExpr ) 
 	-> ^($w $b)
@@ -524,7 +529,8 @@ identifier
 	;
 
 addrExpr [ bool root ]
-	: addrExprDot [root]
+	: castExpr
+	| addrExprDot [root]
 	| addrExprIndex [root]
 	| addrExprIdent [root]
  	;
@@ -566,7 +572,8 @@ propertyName
 	;
 
 propertyRef!
-	: propertyRefPath
+	: castExpr 
+	| propertyRefPath
 	| propertyRefIdent
 	;
 	

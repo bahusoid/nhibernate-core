@@ -33,6 +33,10 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 				{
 					return type;
 				}
+
+				if (CastEntityType != null)
+					return CastEntityType.Type;
+
 				FromElement fe = FromElement;
 				if ( fe != null ) 
 				{
@@ -82,7 +86,7 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			var fe = FromElement;
 			if (fe != null)
 			{
-				var fragment = fe.GetScalarIdentifierSelectFragment(i, aliasCreator);
+				var fragment = ElementType.GetScalarIdentifierSelectFragment(i, aliasCreator);
 				Text = fragment.ToSqlStringFragment(false);
 				return fragment.GetColumnAliases().ToArray();
 			}

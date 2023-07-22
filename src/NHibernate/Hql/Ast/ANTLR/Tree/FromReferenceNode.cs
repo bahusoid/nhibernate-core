@@ -1,6 +1,11 @@
 using System;
+using System.Linq;
 using System.Text;
 using Antlr.Runtime;
+using NHibernate.Persister.Entity;
+using NHibernate.Type;
+using NHibernate.Util;
+using IQueryable = NHibernate.Persister.Entity.IQueryable;
 
 namespace NHibernate.Hql.Ast.ANTLR.Tree
 {
@@ -25,8 +30,20 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 		public override FromElement FromElement
 		{
 			get { return _fromElement; }
-			set { _fromElement = value; }
+			set
+			{
+				_fromElement = value;
+				if (value != null)
+				{
+					ElementType = CastEntityType != null
+						? new FromElementType(value, CastEntityType, null, CastEntityType.Type)
+						: _fromElement.ElementType;
+				}
+			}
 		}
+
+		public IQueryable CastEntityType { get; set; }
+		protected FromElementType ElementType { get; set; }
 
 		public bool IsResolved
 		{
@@ -104,6 +121,22 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 
 		public virtual void ResolveFirstChild()
 		{
+		}
+
+		public IType GetPropertyType(string propertyName, string propertyPath)
+		{
+			return ElementType?.GetPropertyType(propertyName, propertyPath);
+		}
+
+		protected internal string[] ToColumns(string tableAlias, string propertyPath)
+		{
+			if (FromElement.ElementType == ElementType)
+				return ElementType.ToColumns(tableAlias, propertyPath, false);
+
+			var persister = (AbstractEntityPersister) FromElement.ElementType.Queryable;
+			var tableNumber = persister.GetSubclassPropertyTableNumber(propertyPath, ElementType.Queryable.EntityName);
+			var alias = persister.GenerateTableAlias(tableAlias, tableNumber);
+			return ElementType.ToColumns(string.Empty, propertyPath, false).Select(x => alias + "." + x).ToArray();
 		}
 	}
 }

@@ -633,6 +633,8 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 		internal bool UseTableAliases => Walker.StatementType == HqlSqlWalker.SELECT || Walker.IsSubQuery;
 		internal bool ReusedJoin { get; set; }
 
+		public FromElementType ElementType => _elementType;
+
 		public void HandlePropertyBeingDereferenced(IType propertySource, string propertyName)
 		{
 			if (QueryableCollection != null && CollectionProperties.IsCollectionProperty(propertyName))

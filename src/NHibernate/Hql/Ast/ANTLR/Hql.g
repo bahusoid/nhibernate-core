@@ -108,6 +108,7 @@ tokens
 	UNARY_PLUS;
 	VECTOR_EXPR;		// ( x, y, z )
 	WEIRD_IDENT;		// Identifiers that were keywords when they came in.
+	CAST_EXPR;
 
 	// Literal tokens.
 	CONSTANT;
@@ -411,6 +412,11 @@ negatedExpression
 	| equalityExpression
 	;
 
+castedIdentPrimaryBase
+	: i=IDENT OPEN p1=path AS p2=path CLOSE
+		-> ^(CAST_EXPR $p1 $p2)
+	;
+
 //## OP: EQ | LT | GT | LE | GE | NE | SQL_NE | LIKE;
 
 // level 6 - EQ, NE
@@ -600,7 +606,8 @@ vectorExpr
 // NOTE: handleDotIdent() is called immediately after the first IDENT is recognized because
 // the method looks a head to find keywords after DOT and turns them into identifiers.
 identPrimary
-	: identifier {{ HandleDotIdent(); }}
+	: { input.LA(1) == IDENT && input.LA(2) == OPEN && input.LT(1).Text == "treat" }? castedIdentPrimaryBase 
+	| identifier {{ HandleDotIdent(); }}
 			( options {greedy=true;} : DOT^ ( identifier | o=OBJECT { $o.Type = IDENT; } ) )*
 			( ( op=OPEN^ { $op.Type = METHOD_CALL;} exprList CLOSE! )
 			)?
