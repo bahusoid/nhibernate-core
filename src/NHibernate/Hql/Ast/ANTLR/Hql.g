@@ -706,12 +706,6 @@ path
 identifier
 	: IDENT
 	;
-	catch [RecognitionException ex]
-	{
-		retval.Tree = HandleIdentifierError(input.LT(1),ex);
-	}
-	
-	
 
 // **** LEXER ******************************************************************
 
