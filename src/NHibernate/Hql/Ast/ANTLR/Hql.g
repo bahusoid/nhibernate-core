@@ -576,7 +576,7 @@ atom
 
 // level 0 - the basic element of an expression
 primaryExpression
-	:   identPrimary ( options {greedy=true;} : DOT^ 'class' )?
+	: identPrimary ( options {greedy=true;} : DOT^ 'class' )?
 	|   constant
 	|   COLON^ identifier
 	// TODO: Add parens to the tree so the user can control the operator evaluation order.
@@ -695,10 +695,9 @@ constant
 
 path
 @init {
-// TODO - need to clean up DotIdent - suspect that DotIdent2 supersedes the other one, but need to do the analysis
-//HandleDotIdent2();
+HandleDotIdents();
 }
-	: identifier ( DOT^ { WeakKeywords(); } identifier )*
+	: identifier ( DOT^ identifier )*
 	;
 
 // Wraps the IDENT token from the lexer, in order to provide

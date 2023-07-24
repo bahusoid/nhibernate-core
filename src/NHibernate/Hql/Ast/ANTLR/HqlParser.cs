@@ -112,7 +112,23 @@ namespace NHibernate.Hql.Ast.ANTLR
             throw new MismatchedTokenException(ttype, input);
         }
 
-		public void WeakKeywords()
+        public bool HandleDotIdents()
+        {
+	        int i = 2;
+
+	        while (input.LA(i) == DOT)
+	        {
+		        input.LT(i - 1).Type = IDENT;
+		        var next = input.LT(i + 1);
+		        if (next != null)
+			        next.Type = IDENT;
+		        i *= 2;
+	        }
+
+	        return input.LA(1) == IDENT || ((HqlToken) input.LT(1)).PossibleId;
+        }
+
+        public void WeakKeywords()
 		{
 			int t = input.LA(1);
 
