@@ -327,6 +327,9 @@ takeClause
 	;
 
 parameter
+@init {
+HandleParameter();
+}
 	: COLON^ identifier
 	| PARAM^ (NUM_INT)?
 	;
@@ -576,12 +579,14 @@ atom
 
 // level 0 - the basic element of an expression
 primaryExpression
+@init {
+HandleDotIdents();
+}
 	: identPrimary ( options {greedy=true;} : DOT^ 'class' )?
 	|   constant
-	|   COLON^ identifier
+	|   parameter
 	// TODO: Add parens to the tree so the user can control the operator evaluation order.
 	|   OPEN! (expressionOrVector | subQuery) CLOSE!
-	|   PARAM^ (NUM_INT)?
 	;
 
 // This parses normal expression and a list of expressions separated by commas.  If a comma is encountered

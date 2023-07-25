@@ -112,6 +112,14 @@ namespace NHibernate.Hql.Ast.ANTLR
             throw new MismatchedTokenException(ttype, input);
         }
 
+        public void HandleParameter()
+        {
+	        if (input.LA(1) == COLON)
+	        {
+		        input.LT(2).Type = IDENT;
+	        }
+        }
+
         public bool HandleDotIdents()
         {
 	        int i = 2;
