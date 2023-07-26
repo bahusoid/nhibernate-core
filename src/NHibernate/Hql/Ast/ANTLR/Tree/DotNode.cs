@@ -210,10 +210,6 @@ namespace NHibernate.Hql.Ast.ANTLR.Tree
 			// this might be a Java constant.
 			if ( propertyType == null ) 
 			{
-				if (parent == null && !SkipSemiResolve)
-				{
-					Walker.LiteralProcessor.LookupConstant( this );
-				}
 				// If the propertyType is null and there isn't a parent, just
 				// stop now... there was a problem resolving the node anyway.
 				return;
