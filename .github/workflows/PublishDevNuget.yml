@@ -1,7 +1,10 @@
 name: Publish Dev Nuget Package
 
-on: [push, pull_request, workflow_dispatch]
-
+on: 
+  push:
+    branches:    
+      - master
+      - '*.**.x'
 jobs:
   publish:
     # if: github.repository == 'nhibernate/nhibernate-core'
