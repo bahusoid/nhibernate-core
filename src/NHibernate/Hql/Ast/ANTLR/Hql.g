@@ -566,12 +566,6 @@ quantifiedExpression
 // method call ( '.' ident '(' exprList ') )
 atom
 	 : primaryExpression
-		(
-			DOT^ identifier
-				( options { greedy=true; } :
-					( op=OPEN^ {$op.Type = METHOD_CALL; } exprList CLOSE! ) )?
-		|	lb=OPEN_BRACKET^ {$lb.Type = INDEX_OP; } expression CLOSE_BRACKET!
-		)*
 	;
 
 // level 0 - the basic element of an expression
@@ -602,6 +596,7 @@ vectorExpr
 identPrimary
 	: path
 			( ( op=OPEN^ { $op.Type = METHOD_CALL;} exprList CLOSE! )
+				|	lb=OPEN_BRACKET^ {$lb.Type = INDEX_OP; } expression CLOSE_BRACKET!
 			)?
 	// Also allow special 'aggregate functions' such as count(), avg(), etc.
 	| aggregate
