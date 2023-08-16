@@ -576,7 +576,7 @@ atom
 
 // level 0 - the basic element of an expression
 primaryExpression
-	:   identPrimary ( options {greedy=true;} : DOT^ 'class' )?
+	:   identPrimary
 	|   constant
 	|   COLON^ identifier
 	// TODO: Add parens to the tree so the user can control the operator evaluation order.
@@ -600,8 +600,7 @@ vectorExpr
 // NOTE: handleDotIdent() is called immediately after the first IDENT is recognized because
 // the method looks a head to find keywords after DOT and turns them into identifiers.
 identPrimary
-	: identifier {{ HandleDotIdent(); }}
-			( options {greedy=true;} : DOT^ ( identifier | o=OBJECT { $o.Type = IDENT; } ) )*
+	: path
 			( ( op=OPEN^ { $op.Type = METHOD_CALL;} exprList CLOSE! )
 			)?
 	// Also allow special 'aggregate functions' such as count(), avg(), etc.
