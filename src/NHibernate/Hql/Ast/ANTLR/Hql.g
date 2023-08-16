@@ -590,14 +590,16 @@ vectorExpr
 	: COMMA! expression (COMMA! expression)*
 	;
 
-// identifier, followed by member refs (dot ident), or method calls.
-// NOTE: handleDotIdent() is called immediately after the first IDENT is recognized because
-// the method looks a head to find keywords after DOT and turns them into identifiers.
-identPrimary
+identPrimaryBase
 	: path
 			( ( op=OPEN^ { $op.Type = METHOD_CALL;} exprList CLOSE! )
 				|	lb=OPEN_BRACKET^ {$lb.Type = INDEX_OP; } expression CLOSE_BRACKET!
 			)?
+	;
+
+// identifier, followed by member refs (dot ident), or method calls.
+identPrimary
+	: identPrimaryBase (DOT^ identPrimaryBase)*
 	// Also allow special 'aggregate functions' such as count(), avg(), etc.
 	| aggregate
 	;
