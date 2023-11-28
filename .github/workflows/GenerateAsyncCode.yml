@@ -14,13 +14,13 @@ jobs:
     - name: Setup .NET
       uses: actions/setup-dotnet@v3
       with:
-        dotnet-version: 2.2.402
+        dotnet-version: 2.2.*
 
     - name: Generate Async code
       run: |
         dotnet restore "./Tools/packages.csproj" --packages ./Tools
         pushd src
-        dotnet restore ./NHibernate.sln
+        dotnet restore ./NHibernate.sln /p:TreatWarningsAsErrors=false
         dotnet $(find ./../Tools/csharpasyncgenerator.commandline -name AsyncGenerator.CommandLine.dll) 
         popd
 
