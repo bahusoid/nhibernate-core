@@ -82,4 +82,4 @@ jobs:
       if: always()
       with:
         files: |
-          ./*-TestResult.xml   
+          NHibernate.Test-TestResult.xml
