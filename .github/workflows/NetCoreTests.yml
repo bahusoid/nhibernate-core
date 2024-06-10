@@ -77,9 +77,9 @@ jobs:
       run: |
         pwsh -noprofile -command "& ./build.ps1 -TaskList Set-Configuration,Test -properties @{'Database' = '${{matrix.DB}}';'ConnectionString'='${{matrix.CONNECTION_STRING}}'}"
 
-    - name: Publish Test Results
-      uses: EnricoMi/publish-unit-test-result-action@v2
-      if: always()
+    - name: Publish Report
+      uses: turing85/publish-report@v2
+      if: ${{ always() }}
       with:
-        files: |
-          NHibernate.Test-TestResult.xml
+        report-path: 'NHibernate.Test-TestResult.xml'
+        
