@@ -67,7 +67,7 @@ namespace NHibernate.Test.NHSpecificTest.GH0000
 				.Query<Entity>()
 				.Where(e => e.Name == "Bob");
 
-			Assert.That(result.ToList(), Has.Count.EqualTo(1));
+			Assert.That(result.ToList(), Has.Count.EqualTo(2));
 
 			transaction.Commit();
 		}
